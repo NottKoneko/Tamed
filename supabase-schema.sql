@@ -25,6 +25,7 @@ CREATE TABLE public.profiles (
   custom_theme_accent TEXT DEFAULT '#ec4899',  -- Secondary accent color (HEX)
   custom_theme_mode TEXT DEFAULT 'dark',       -- 'light', 'dark', 'pastel'
   praise_terms TEXT,       -- Custom praise text
+  timezone TEXT DEFAULT 'America/Los_Angeles', -- User active timezone
   reminder_time TEXT DEFAULT '21:00', -- Daily check-in reminder time (HH:MM)
   show_xp_bar BOOLEAN DEFAULT TRUE,   -- Toggle visibility of XP progress bar
   pairing_pin TEXT DEFAULT NULL,      -- 4-digit security PIN for sensitive actions

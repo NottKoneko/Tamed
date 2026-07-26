@@ -3,12 +3,13 @@ import { useAppStore } from '../store/useAppStore';
 import { getCurrencyInfo } from '../utils/currency';
 import { THEME_MODES } from '../utils/theme';
 import { requestNotificationPermission, scheduleLocalDailyCheckIn } from '../utils/notifications';
+import { TIMEZONE_OPTIONS } from './Onboarding';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PinModal } from '../components/PinModal';
 import { 
   Palette, Heart, LogOut, Unlink, Check, Shield, 
   Volume2, VolumeX, Coins, ChevronDown, ChevronUp, Zap, 
-  Lock, Bell, Eye, EyeOff, Sparkles, Sliders
+  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe
 } from 'lucide-react';
 
 /* ───── Collapsible Section Component ──────────────────────────────── */
@@ -62,7 +63,7 @@ export const Settings = () => {
   const { 
     user, pairing, partnerProfile, 
     updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency, 
-    updateCustomTheme, updatePetNickname, updateReminderTime, toggleXPBar, setPairingPin, 
+    updateCustomTheme, updatePetNickname, updateReminderTime, updateTimezone, toggleXPBar, setPairingPin, 
     updatePairingRules, unpair, setUser, soundEnabled, toggleSound, showToast 
   } = useAppStore();
 
@@ -81,6 +82,9 @@ export const Settings = () => {
   const [customSpeciesIcon, setCustomSpeciesIcon] = useState(user?.custom_species_icon || '🐰');
   const [petNicknameInput, setPetNicknameInput] = useState(user?.pet_nickname || '');
   const [praiseTerms, setPraiseTerms] = useState(user?.praise_terms || 'Good girl!');
+
+  /* Timezone state */
+  const [timezoneInput, setTimezoneInput] = useState(user?.timezone || 'America/Los_Angeles');
 
   /* Notification & Reminders state */
   const [reminderTimeInput, setReminderTimeInput] = useState(user?.reminder_time || '21:00');
@@ -412,6 +416,33 @@ export const Settings = () => {
               <Check size={16} /> Save Time
             </button>
           </div>
+        </form>
+      </Section>
+
+      {/* ── 🌍 Timezone Settings ───────────────────────────── */}
+      <Section
+        icon={<Globe />}
+        title="Timezone"
+        subtitle="Configure active timezone for daily tasks & calendar logs"
+        accentColor="#10b981"
+      >
+        <form onSubmit={(e) => { e.preventDefault(); updateTimezone(timezoneInput); }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <Label>Select Timezone</Label>
+            <select
+              className="input-field"
+              value={timezoneInput}
+              onChange={(e) => setTimezoneInput(e.target.value)}
+              style={{ fontWeight: 600, fontSize: '0.9rem' }}
+            >
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="btn-primary" style={{ padding: '0.65rem' }}>
+            <Check size={16} /> Save Timezone
+          </button>
         </form>
       </Section>
 

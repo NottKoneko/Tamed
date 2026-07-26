@@ -383,6 +383,23 @@ class MockBackend {
     return task;
   }
 
+  async overrideDailyTask(taskId, isCompleted = true) {
+    await delay();
+    const task = db.daily_tasks.find(t => t.id === taskId);
+    if (!task) throw new Error("Task not found");
+
+    const wasCompleted = task.is_completed;
+    task.is_completed = isCompleted;
+    const pairing = db.pairings.find(p => p.id === task.pairing_id);
+
+    if (isCompleted && !wasCompleted && pairing) {
+      this.addXP(pairing.pet_id, task.xp_reward || 25);
+    }
+
+    this.notify('DAILY_TASK_UPDATED', task);
+    return task;
+  }
+
   async deleteDailyTask(taskId) {
     await delay();
     db.daily_tasks = db.daily_tasks.filter(t => t.id !== taskId);

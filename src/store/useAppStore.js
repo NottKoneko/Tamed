@@ -258,6 +258,28 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  evaluateAutoCalendarStatus: async () => {
+    const { dailyTasks, pairing } = get();
+    if (!pairing || !dailyTasks || dailyTasks.length === 0) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const total = dailyTasks.length;
+    const completed = dailyTasks.filter(t => t.is_completed).length;
+
+    let targetStatus = 'red';
+    if (completed === total) {
+      targetStatus = 'green';
+    } else if (completed > 0) {
+      targetStatus = 'yellow';
+    }
+
+    try {
+      await mockBackend.setCalendarEntry(pairing.id, todayStr, targetStatus);
+    } catch (err) {
+      console.error("Auto calendar evaluation error:", err);
+    }
+  },
+
   toggleDailyTask: async (taskId) => {
     const { showToast } = get();
     try {
@@ -267,6 +289,20 @@ export const useAppStore = create((set, get) => ({
         playSound('taskComplete');
         showToast('Task completed! +25 XP awarded 🎉', 'success');
       }
+      await get().evaluateAutoCalendarStatus();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  overrideDailyTask: async (taskId, isCompleted = true) => {
+    const { showToast } = get();
+    try {
+      await mockBackend.overrideDailyTask(taskId, isCompleted);
+      await get().loadPairingData();
+      playSound('praise');
+      showToast(isCompleted ? 'Owner override: Task marked complete! 🟢' : 'Owner override: Task marked incomplete', 'info');
+      await get().evaluateAutoCalendarStatus();
     } catch (err) {
       showToast(err.message, 'warning');
     }
@@ -278,6 +314,19 @@ export const useAppStore = create((set, get) => ({
       await mockBackend.deleteDailyTask(taskId);
       await get().loadPairingData();
       showToast('Daily task removed', 'info');
+      await get().evaluateAutoCalendarStatus();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updateTimezone: async (timezone) => {
+    const { user, showToast } = get();
+    if (!user) return;
+    try {
+      const updated = await mockBackend.updateProfile(user.id, { timezone });
+      set({ user: updated });
+      showToast(`Timezone updated to ${timezone} 🌍`, 'success');
     } catch (err) {
       showToast(err.message, 'warning');
     }

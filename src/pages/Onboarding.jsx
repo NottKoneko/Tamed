@@ -3,9 +3,30 @@ import { useAppStore } from '../store/useAppStore';
 import { mockBackend } from '../services/mockBackend';
 import { Heart, Sparkles, Shield, Key } from 'lucide-react';
 
+const tryGetTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles';
+  } catch (e) {
+    return 'America/Los_Angeles';
+  }
+};
+
+export const TIMEZONE_OPTIONS = [
+  'America/Los_Angeles',
+  'America/Denver',
+  'America/Chicago',
+  'America/New_York',
+  'Europe/London',
+  'Europe/Paris',
+  'Asia/Tokyo',
+  'Australia/Sydney',
+  'UTC'
+];
+
 export const Onboarding = () => {
   const [role, setRole] = useState(null); // 'owner' | 'pet'
   const [username, setUsername] = useState('');
+  const [timezone, setTimezone] = useState(tryGetTimezone());
   const [species, setSpecies] = useState('puppy');
   const [customSpeciesName, setCustomSpeciesName] = useState('Bunny');
   const [customSpeciesIcon, setCustomSpeciesIcon] = useState('🐰');
@@ -20,6 +41,7 @@ export const Onboarding = () => {
     if (!username.trim()) return;
     try {
       const profile = await mockBackend.loginOwner(username.trim());
+      profile.timezone = timezone;
       await setUser(profile);
     } catch (err) {
       showToast(err.message || 'Login failed', 'warning');
@@ -38,6 +60,7 @@ export const Onboarding = () => {
         species === 'custom' ? primaryColor : '#8b5cf6',
         species === 'custom' ? accentColor : '#ec4899'
       );
+      profile.timezone = timezone;
       await setUser(profile);
       await pairWithCode(pairingCode.trim());
     } catch (err) {
@@ -150,6 +173,22 @@ export const Onboarding = () => {
             />
           </div>
 
+          <div>
+            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
+              Timezone
+            </label>
+            <select
+              className="input-field"
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              style={{ fontWeight: 600 }}
+            >
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>
+
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <button type="button" className="btn-secondary" onClick={() => setRole(null)}>
               Back
@@ -166,17 +205,34 @@ export const Onboarding = () => {
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <h2 style={{ fontSize: '1.25rem' }}>Pet Profile & Customization</h2>
 
-          <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
-              Pet Name / Nickname
-            </label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="e.g. Little Fox"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
+                Pet Name / Nickname
+              </label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="e.g. Little Fox"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
+                Timezone
+              </label>
+              <select
+                className="input-field"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                style={{ fontWeight: 600 }}
+              >
+                {TIMEZONE_OPTIONS.map((tz) => (
+                  <option key={tz} value={tz}>{tz}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>

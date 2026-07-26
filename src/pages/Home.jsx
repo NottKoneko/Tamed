@@ -5,7 +5,7 @@ import { XPProgressBar } from '../components/XPProgressBar';
 import { formatCurrency, getCurrencyInfo } from '../utils/currency';
 import { 
   Trophy, Sparkles, Plus, Minus, Gift, Calendar as CalendarIcon, Shield, 
-  Flame, Heart, Send, CheckCircle2, Circle, Trash2, Tag, Award
+  Flame, Heart, Send, CheckCircle2, Circle, Trash2, Tag, Award, MoreVertical, Check, RotateCcw
 } from 'lucide-react';
 
 export const Home = () => {
@@ -21,6 +21,7 @@ export const Home = () => {
     dailyTasks = [],
     createDailyTask,
     toggleDailyTask,
+    overrideDailyTask,
     deleteDailyTask,
     sendPraiseNote
   } = useAppStore();
@@ -41,6 +42,7 @@ export const Home = () => {
   const [praiseType, setPraiseType] = useState('headpat');
   const [praiseMessage, setPraiseMessage] = useState('');
   const [isSendingPraise, setIsSendingPraise] = useState(false);
+  const [activeTaskMenuId, setActiveTaskMenuId] = useState(null);
 
   const handleAdjustPoints = (delta) => {
     setPetPoints(Math.max(0, currentPoints + delta));
@@ -258,20 +260,20 @@ export const Home = () => {
         </div>
       )}
 
-      {/* BEHAVIOR CODEX: Daily Task Routines (+25 XP) */}
+      {/* DAILY TASKS (+25 XP) */}
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Award size={20} color="var(--color-primary)" /> Daily Behavior Codex
+              <Award size={20} color="var(--color-primary)" /> Daily Tasks
             </h2>
             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-              Complete daily routines for <b>+25 XP</b> each!
+              Complete daily tasks for <b>+25 XP</b> each! Auto-updates day status 🟢🟡🔴
             </span>
           </div>
           {isOwner && (
             <span className="badge" style={{ backgroundColor: 'var(--color-surface-hover)', color: 'var(--color-primary-dark)' }}>
-              {(dailyTasks || []).length} Routines
+              {(dailyTasks || []).length} Tasks
             </span>
           )}
         </div>
@@ -286,7 +288,6 @@ export const Home = () => {
             (dailyTasks || []).map((task) => (
               <div
                 key={task.id}
-                onClick={() => !isOwner && toggleDailyTask(task.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -295,11 +296,14 @@ export const Home = () => {
                   borderRadius: 'var(--border-radius)',
                   backgroundColor: task.is_completed ? 'var(--color-green-light)' : 'var(--color-surface-hover)',
                   border: '1px solid var(--color-border)',
-                  cursor: isOwner ? 'default' : 'pointer',
+                  position: 'relative',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                <div 
+                  onClick={() => !isOwner && toggleDailyTask(task.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flex: 1, cursor: isOwner ? 'default' : 'pointer' }}
+                >
                   {task.is_completed ? (
                     <CheckCircle2 size={20} color="var(--color-green)" />
                   ) : (
@@ -319,10 +323,59 @@ export const Home = () => {
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                     +{task.xp_reward || 25} XP
                   </span>
+
+                  {/* Owner 3-Dots Menu */}
                   {isOwner && (
-                    <button onClick={() => deleteDailyTask(task.id)} style={{ color: 'var(--color-red)', padding: '0.2rem' }}>
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => setActiveTaskMenuId(activeTaskMenuId === task.id ? null : task.id)}
+                        style={{ padding: '0.2rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+
+                      {activeTaskMenuId === task.id && (
+                        <div style={{
+                          position: 'absolute', right: 0, top: '100%', zIndex: 50, marginTop: '4px',
+                          backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-md)',
+                          padding: '0.35rem', minWidth: '160px', display: 'flex', flexDirection: 'column', gap: '0.2rem'
+                        }}>
+                          <button
+                            onClick={() => {
+                              overrideDailyTask(task.id, !task.is_completed);
+                              setActiveTaskMenuId(null);
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.4rem',
+                              padding: '0.45rem 0.6rem', fontSize: '0.78rem', fontWeight: 600,
+                              borderRadius: '6px', textAlign: 'left',
+                              color: task.is_completed ? 'var(--color-yellow)' : 'var(--color-green)',
+                              backgroundColor: 'var(--color-surface-hover)'
+                            }}
+                          >
+                            {task.is_completed ? <RotateCcw size={14} /> : <Check size={14} />}
+                            {task.is_completed ? 'Mark Incomplete' : 'Override Checkoff'}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              deleteDailyTask(task.id);
+                              setActiveTaskMenuId(null);
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.4rem',
+                              padding: '0.45rem 0.6rem', fontSize: '0.78rem', fontWeight: 600,
+                              borderRadius: '6px', textAlign: 'left',
+                              color: 'var(--color-red)',
+                              backgroundColor: 'var(--color-surface-hover)'
+                            }}
+                          >
+                            <Trash2 size={14} /> Delete Task
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
