@@ -13,7 +13,7 @@ import {
 
 /* ───── Collapsible Section Component ──────────────────────────────── */
 const Section = ({ icon, title, subtitle, accentColor = 'var(--color-primary)', children }) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
       <button
@@ -344,30 +344,33 @@ export const Settings = () => {
         </div>
       </div>
 
-      {/* ── 🔒 Security & Security PIN Code ────────────────── */}
+      {/* ── 📺 Account Pairing Code / TV PIN ────────────────── */}
       <Section
         icon={<Lock />}
-        title="Security & Passcode PIN"
-        subtitle="Protect sensitive actions with a 4-digit PIN"
+        title="TV-Style Pairing PIN"
+        subtitle="Numeric PIN code used to link accounts like a Smart TV"
         accentColor="#f59e0b"
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-              {user?.pairing_pin ? '🔒 Security PIN Active' : '🔓 Security PIN Disabled'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+          <div style={{ padding: '0.875rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Your Pairing PIN</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--color-primary-dark)', marginTop: '0.1rem' }}>
+                {user?.pairing_pin || user?.uid || '8492'}
+              </div>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
-              {user?.pairing_pin ? 'PIN required for approving redemptions & unpairing' : 'Add a 4-digit PIN to restrict sensitive actions'}
-            </div>
+            <button
+              type="button"
+              onClick={() => { setNewPin(user?.pairing_pin || ''); setShowPinSetupModal(true); }}
+              className="btn-secondary"
+              style={{ width: 'auto', padding: '0.45rem 0.875rem', fontSize: '0.8rem' }}
+            >
+              {user?.pairing_pin ? 'Edit TV PIN' : 'Set Custom PIN'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => { setNewPin(''); setShowPinSetupModal(true); }}
-            className="btn-secondary"
-            style={{ width: 'auto', padding: '0.45rem 0.875rem', fontSize: '0.8rem' }}
-          >
-            {user?.pairing_pin ? 'Change PIN' : 'Set PIN'}
-          </button>
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+            Pets enter this TV-style pairing code during onboarding to link their account with your dashboard.
+          </p>
         </div>
       </Section>
 

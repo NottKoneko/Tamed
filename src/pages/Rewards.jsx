@@ -70,15 +70,6 @@ export const Rewards = () => {
   const handleOwnerCreateStoreItem = (e) => {
     e.preventDefault();
     if (!storeItemName.trim()) return;
-
-    if (user?.pairing_pin) {
-      setPinAction({
-        type: 'CREATE_ITEM',
-        payload: { name: storeItemName.trim(), desc: storeItemDesc.trim(), points: parseInt(storeItemPoints, 10) }
-      });
-      return;
-    }
-
     createRewardItem(storeItemName.trim(), storeItemDesc.trim(), parseInt(storeItemPoints, 10));
     setStoreItemName('');
     setStoreItemDesc('');
@@ -87,13 +78,6 @@ export const Rewards = () => {
   };
 
   const handleOwnerApproveRedemption = (redemptionId, status) => {
-    if (user?.pairing_pin) {
-      setPinAction({
-        type: 'PROCESS_REDEMPTION',
-        payload: { id: redemptionId, status }
-      });
-      return;
-    }
     processRedemption(redemptionId, status);
   };
 
