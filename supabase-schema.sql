@@ -28,7 +28,7 @@ CREATE TABLE public.profiles (
 );
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 3. PAIRINGS TABLE (Includes customizable day point values)
+-- 3. PAIRINGS TABLE (Includes customizable day point values & custom currency type)
 CREATE TABLE public.pairings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -37,6 +37,9 @@ CREATE TABLE public.pairings (
   point_value_green INTEGER DEFAULT 1,
   point_value_yellow INTEGER DEFAULT 0,
   point_value_red INTEGER DEFAULT 0,
+  custom_currency_name TEXT,     -- e.g. 'Berries', 'Cookies'
+  custom_currency_singular TEXT, -- e.g. 'Berry', 'Cookie'
+  custom_currency_icon TEXT,     -- e.g. '🫐', '🍪'
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(owner_id, pet_id)

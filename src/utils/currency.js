@@ -1,10 +1,21 @@
 /**
  * Currency utility helper mapping pet species to custom species-specific currency name and icon.
+ * Supports Owner custom currency overrides from pairing configuration.
  * Database columns remain `points_balance` & `point_cost` internally.
  */
 
-export const getCurrencyInfo = (species = 'puppy') => {
-  switch (species) {
+export const getCurrencyInfo = (species = 'puppy', pairing = null) => {
+  if (pairing && pairing.custom_currency_name && pairing.custom_currency_icon) {
+    return {
+      name: pairing.custom_currency_name,
+      singular: pairing.custom_currency_singular || pairing.custom_currency_name,
+      icon: pairing.custom_currency_icon,
+      symbol: pairing.custom_currency_icon
+    };
+  }
+
+  const safeSpecies = species || 'puppy';
+  switch (safeSpecies) {
     case 'puppy':
       return {
         name: 'Bones',
@@ -38,11 +49,11 @@ export const getCurrencyInfo = (species = 'puppy') => {
 };
 
 /**
- * Formats a point amount into species currency string.
- * Example: formatCurrency(5, 'puppy') -> "5 🦴 Bones"
+ * Formats a point amount into species/custom currency string.
+ * Example: formatCurrency(5, 'puppy', true, pairing) -> "5 🦴 Bones"
  */
-export const formatCurrency = (amount = 0, species = 'puppy', showName = true) => {
-  const info = getCurrencyInfo(species);
+export const formatCurrency = (amount = 0, species = 'puppy', showName = true, pairing = null) => {
+  const info = getCurrencyInfo(species, pairing);
   if (!showName) return `${amount} ${info.icon}`;
   const label = amount === 1 ? info.singular : info.name;
   return `${amount} ${info.icon} ${label}`;

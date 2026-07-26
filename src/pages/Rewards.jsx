@@ -6,6 +6,7 @@ import { Gift, Plus, Trash2, CheckCircle2, XCircle, Clock, Sparkles, Send, Tag, 
 export const Rewards = () => {
   const { 
     user, 
+    pairing,
     partnerProfile,
     proposals,
     rewardItems, 
@@ -80,7 +81,7 @@ export const Rewards = () => {
         <div>
           <h1 style={{ fontSize: '1.5rem' }}>Reward Hub</h1>
           <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
-            {isOwner ? 'Manage store catalog & process redemptions' : `Available Balance: ${formatCurrency(petPoints, activeSpecies)}`}
+            {isOwner ? 'Manage store catalog & process redemptions' : `Available Balance: ${formatCurrency(petPoints, activeSpecies, true, pairing)}`}
           </p>
         </div>
 
@@ -112,7 +113,7 @@ export const Rewards = () => {
             <h2 style={{ fontSize: '1.1rem' }}>Propose Reward Idea for Store</h2>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-            Suggest a new reward! Once your Owner approves it, it will be added to the Reward Store so you can redeem it with your {getCurrencyInfo(activeSpecies).name.toLowerCase()}.
+            Suggest a new reward! Once your Owner approves it, it will be added to the Reward Store so you can redeem it with your {getCurrencyInfo(activeSpecies, pairing).name.toLowerCase()}.
           </p>
 
           <div>
@@ -183,7 +184,7 @@ export const Rewards = () => {
 
           <div>
             <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
-              Cost: {formatCurrency(storeItemPoints, activeSpecies)}
+              Cost: {formatCurrency(storeItemPoints, activeSpecies, true, pairing)}
             </label>
             <input
               type="range"
@@ -205,10 +206,10 @@ export const Rewards = () => {
       {isOwner && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <h2 style={{ fontSize: '1.15rem', color: 'var(--color-primary-dark)' }}>
-            🎁 Pending Redemptions Inbox ({pendingRedemptions.length})
+            🎁 Pending Redemptions Inbox ({(pendingRedemptions || []).length})
           </h2>
           
-          {pendingRedemptions.length === 0 ? (
+          {(pendingRedemptions || []).length === 0 ? (
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
               No pending point redemption claims.
             </p>
@@ -219,7 +220,7 @@ export const Rewards = () => {
                   <div>
                     <h3 style={{ fontSize: '1.05rem', marginBottom: '0.25rem' }}>{red.title}</h3>
                     <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      Spent <b>{formatCurrency(red.points_spent, activeSpecies)}</b> on {new Date(red.created_at).toLocaleDateString()}
+                      Spent <b>{formatCurrency(red.points_spent, activeSpecies, true, pairing)}</b> on {new Date(red.created_at).toLocaleDateString()}
                     </span>
                   </div>
                   <span style={{ backgroundColor: 'var(--color-yellow)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
@@ -252,9 +253,9 @@ export const Rewards = () => {
       {/* OWNER INBOX 2: Pet Store Proposals */}
       {isOwner && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-          <h2 style={{ fontSize: '1.15rem' }}>💡 Store Idea Proposals Inbox ({pendingProposals.length})</h2>
+          <h2 style={{ fontSize: '1.15rem' }}>💡 Store Idea Proposals Inbox ({(pendingProposals || []).length})</h2>
           
-          {pendingProposals.length === 0 ? (
+          {(pendingProposals || []).length === 0 ? (
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
               No pending store idea proposals.
             </p>
@@ -284,7 +285,7 @@ export const Rewards = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Tag size={16} color="var(--color-primary)" />
                       <label style={{ fontSize: '0.825rem', fontWeight: 600 }}>
-                        Set Cost ({getCurrencyInfo(activeSpecies).name}):
+                        Set Cost ({getCurrencyInfo(activeSpecies, pairing).name}):
                       </label>
                       <input
                         type="number"
@@ -303,7 +304,7 @@ export const Rewards = () => {
                         className="btn-primary"
                         style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', backgroundColor: 'var(--color-green)' }}
                       >
-                        <CheckCircle2 size={14} /> Approve & Add ({formatCurrency(currentCost, activeSpecies, false)})
+                        <CheckCircle2 size={14} /> Approve & Add ({formatCurrency(currentCost, activeSpecies, false, pairing)})
                       </button>
                       <button
                         onClick={() => processProposal(prop.id, 'denied')}
@@ -351,7 +352,7 @@ export const Rewards = () => {
                       color: 'var(--color-primary-dark)',
                       fontSize: '0.85rem'
                     }}>
-                      Cost: {formatCurrency(item.point_cost, activeSpecies)}
+                      Cost: {formatCurrency(item.point_cost, activeSpecies, true, pairing)}
                     </span>
                   </div>
 
@@ -377,7 +378,7 @@ export const Rewards = () => {
                           cursor: canAfford ? 'pointer' : 'not-allowed'
                         }}
                       >
-                        <Sparkles size={14} /> Redeem ({formatCurrency(item.point_cost, activeSpecies, false)})
+                        <Sparkles size={14} /> Redeem ({formatCurrency(item.point_cost, activeSpecies, false, pairing)})
                       </button>
                     )}
                   </div>
@@ -406,7 +407,7 @@ export const Rewards = () => {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-red)', display: 'block', marginBottom: '0.25rem' }}>
-                    -{formatCurrency(red.points_spent, activeSpecies)}
+                    -{formatCurrency(red.points_spent, activeSpecies, true, pairing)}
                   </span>
                   {redemptionStatusBadge[red.status]}
                 </div>

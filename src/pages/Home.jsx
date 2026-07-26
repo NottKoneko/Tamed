@@ -126,7 +126,7 @@ export const Home = () => {
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block' }}>Balance</span>
             <strong style={{ fontSize: '1.25rem', color: 'var(--color-primary-dark)', letterSpacing: '-0.02em' }}>
-              {formatCurrency(currentPoints, activeSpecies)}
+              {formatCurrency(currentPoints, activeSpecies, true, pairing)}
             </strong>
           </div>
         </div>
@@ -166,7 +166,7 @@ export const Home = () => {
           <div style={{ padding: '0.5rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-green-light)', border: '1px solid var(--color-green)' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#065f46', marginBottom: '0.15rem' }}>🟢 Green</div>
             <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#047857' }}>
-              +{pairing?.point_value_green ?? 1} {getCurrencyInfo(activeSpecies).icon}
+              +{pairing?.point_value_green ?? 1} {getCurrencyInfo(activeSpecies, pairing).icon}
             </div>
             <div style={{ fontSize: '0.65rem', opacity: 0.8, color: '#065f46' }}>+50 XP</div>
           </div>
@@ -174,7 +174,7 @@ export const Home = () => {
           <div style={{ padding: '0.5rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-yellow-light)', border: '1px solid var(--color-yellow)' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400e', marginBottom: '0.15rem' }}>🟡 Yellow</div>
             <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#b45309' }}>
-              +{pairing?.point_value_yellow ?? 0} {getCurrencyInfo(activeSpecies).icon}
+              +{pairing?.point_value_yellow ?? 0} {getCurrencyInfo(activeSpecies, pairing).icon}
             </div>
             <div style={{ fontSize: '0.65rem', opacity: 0.8, color: '#92400e' }}>Neutral</div>
           </div>
@@ -182,7 +182,7 @@ export const Home = () => {
           <div style={{ padding: '0.5rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-red-light)', border: '1px solid var(--color-red)' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#991b1b', marginBottom: '0.15rem' }}>🔴 Red</div>
             <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#b91c1c' }}>
-              +{pairing?.point_value_red ?? 0} {getCurrencyInfo(activeSpecies).icon}
+              +{pairing?.point_value_red ?? 0} {getCurrencyInfo(activeSpecies, pairing).icon}
             </div>
             <div style={{ fontSize: '0.65rem', opacity: 0.8, color: '#991b1b' }}>Rough</div>
           </div>
@@ -347,23 +347,23 @@ export const Home = () => {
               <Shield size={20} color="var(--color-primary)" /> Points Adjuster
             </h2>
             <span className="badge" style={{ backgroundColor: 'var(--color-surface-hover)', color: 'var(--color-primary-dark)' }}>
-              {getCurrencyInfo(activeSpecies).name}
+              {getCurrencyInfo(activeSpecies, pairing).name}
             </span>
           </div>
 
           <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
-            Directly adjust or set <b>{partnerProfile?.username || 'Pet'}</b>'s available {getCurrencyInfo(activeSpecies).name.toLowerCase()} balance.
+            Directly adjust or set <b>{partnerProfile?.username || 'Pet'}</b>'s available {getCurrencyInfo(activeSpecies, pairing).name.toLowerCase()} balance.
           </p>
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={() => handleAdjustPoints(-1)} className="btn-secondary" style={{ flex: 1, padding: '0.65rem' }}>
-              <Minus size={15} /> -1 {getCurrencyInfo(activeSpecies).icon}
+              <Minus size={15} /> -1 {getCurrencyInfo(activeSpecies, pairing).icon}
             </button>
             <button onClick={() => handleAdjustPoints(1)} className="btn-primary" style={{ flex: 1, padding: '0.65rem' }}>
-              <Plus size={15} /> +1 {getCurrencyInfo(activeSpecies).icon}
+              <Plus size={15} /> +1 {getCurrencyInfo(activeSpecies, pairing).icon}
             </button>
             <button onClick={() => handleAdjustPoints(5)} className="btn-primary" style={{ flex: 1, padding: '0.65rem', backgroundColor: 'var(--color-green)' }}>
-              <Plus size={15} /> +5 {getCurrencyInfo(activeSpecies).icon}
+              <Plus size={15} /> +5 {getCurrencyInfo(activeSpecies, pairing).icon}
             </button>
           </div>
 
@@ -371,7 +371,7 @@ export const Home = () => {
             <input
               type="number"
               className="input-field"
-              placeholder={`Set total ${getCurrencyInfo(activeSpecies).name.toLowerCase()}`}
+              placeholder={`Set total ${getCurrencyInfo(activeSpecies, pairing).name.toLowerCase()}`}
               value={customPointsInput}
               onChange={(e) => setCustomPointsInput(e.target.value)}
               style={{ flex: 1 }}

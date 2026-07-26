@@ -226,6 +226,21 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  // Pairing Currency Customization (Owner)
+  updatePairingCurrency: async (currencyConfig) => {
+    const { pairing, showToast } = get();
+    if (!pairing) return;
+    try {
+      const updatedPairing = await mockBackend.updatePairingCurrency(pairing.id, currencyConfig);
+      set({ pairing: updatedPairing });
+      playSound('praise');
+      triggerConfetti();
+      showToast(`Point type updated to ${currencyConfig.icon || '⭐'} ${currencyConfig.name || 'Points'}!`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
   // Behavior Codex (Daily Tasks)
   createDailyTask: async (title) => {
     const { pairing, showToast } = get();

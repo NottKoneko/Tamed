@@ -212,6 +212,19 @@ class MockBackend {
     return pairing;
   }
 
+  async updatePairingCurrency(pairingId, { name, singular, icon }) {
+    await delay();
+    const pairing = db.pairings.find(p => p.id === pairingId);
+    if (!pairing) throw new Error("Pairing not found");
+
+    pairing.custom_currency_name = name || null;
+    pairing.custom_currency_singular = singular || name || null;
+    pairing.custom_currency_icon = icon || null;
+
+    this.notify('PAIRING_UPDATED', pairing);
+    return pairing;
+  }
+
   // --- Pairings ---
   async pairWithCode(petId, ownerUid) {
     await delay();
