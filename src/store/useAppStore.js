@@ -424,19 +424,20 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  updateCustomTheme: async (primary, accent) => {
+  updateCustomTheme: async (primary, accent, mode = 'dark') => {
     const { user, showToast } = get();
     if (!user) return;
     try {
       const updated = await mockBackend.updateProfile(user.id, {
         custom_theme_primary: primary,
-        custom_theme_accent: accent
+        custom_theme_accent: accent,
+        custom_theme_mode: mode
       });
       set({ user: updated });
       applyCustomTheme(updated);
       playSound('praise');
       triggerConfetti();
-      showToast('Custom theme colors saved successfully! 🎨', 'success');
+      showToast('Page theme colors updated! 🎨', 'success');
     } catch (err) {
       showToast(err.message, 'warning');
     }
