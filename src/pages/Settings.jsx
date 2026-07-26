@@ -2,7 +2,14 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getCurrencyInfo } from '../utils/currency';
 import { THEME_MODES } from '../utils/theme';
-import { Palette, Heart, LogOut, Unlink, Check, Shield, Volume2, VolumeX, Coins, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { requestNotificationPermission, scheduleLocalDailyCheckIn } from '../utils/notifications';
+import { ConfirmationModal } from '../components/ConfirmationModal';
+import { PinModal } from '../components/PinModal';
+import { 
+  Palette, Heart, LogOut, Unlink, Check, Shield, 
+  Volume2, VolumeX, Coins, ChevronDown, ChevronUp, Zap, 
+  Lock, Bell, Eye, EyeOff, Sparkles, Sliders
+} from 'lucide-react';
 
 /* ───── Collapsible Section Component ──────────────────────────────── */
 const Section = ({ icon, title, subtitle, accentColor = 'var(--color-primary)', children }) => {
@@ -52,30 +59,46 @@ const Label = ({ children }) => (
 
 /* ═══════════════════════════════════════════════════════════════════ */
 export const Settings = () => {
-  const {
-    user, pairing, partnerProfile,
-    updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency,
-    updateCustomTheme, unpair, setUser, soundEnabled, toggleSound
+  const { 
+    user, pairing, partnerProfile, 
+    updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency, 
+    updateCustomTheme, updatePetNickname, updateReminderTime, toggleXPBar, setPairingPin, 
+    updatePairingRules, unpair, setUser, soundEnabled, toggleSound, showToast 
   } = useAppStore();
 
   const isPet = user?.role === 'pet';
   const isOwner = user?.role === 'owner';
 
+  /* Modals */
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showUnpairModal, setShowUnpairModal] = useState(false);
+  const [showPinSetupModal, setShowPinSetupModal] = useState(false);
+  const [newPin, setNewPin] = useState('');
+
   /* Pet Persona state */
   const [species, setSpecies] = useState(user?.pet_species || 'puppy');
   const [customSpeciesName, setCustomSpeciesName] = useState(user?.custom_species_name || 'Bunny');
   const [customSpeciesIcon, setCustomSpeciesIcon] = useState(user?.custom_species_icon || '🐰');
+  const [petNicknameInput, setPetNicknameInput] = useState(user?.pet_nickname || '');
   const [praiseTerms, setPraiseTerms] = useState(user?.praise_terms || 'Good girl!');
+
+  /* Notification & Reminders state */
+  const [reminderTimeInput, setReminderTimeInput] = useState(user?.reminder_time || '21:00');
+  const [notifStatus, setNotifStatus] = useState(
+    'Notification' in window ? Notification.permission : 'unsupported'
+  );
 
   /* Theme state */
   const [pagePrimary, setPagePrimary] = useState(user?.custom_theme_primary || '#8b5cf6');
   const [pageAccent, setPageAccent] = useState(user?.custom_theme_accent || '#ec4899');
   const [pageThemeMode, setPageThemeMode] = useState(user?.custom_theme_mode || 'dark');
 
-  /* Owner point values */
+  /* Owner point values & rules */
   const [greenPoints, setGreenPoints] = useState(pairing?.point_value_green ?? 1);
   const [yellowPoints, setYellowPoints] = useState(pairing?.point_value_yellow ?? 0);
   const [redPoints, setRedPoints] = useState(pairing?.point_value_red ?? 0);
+  const [maxProposalsInput, setMaxProposalsInput] = useState(pairing?.max_pending_proposals ?? 3);
+  const [weekendMultiplierInput, setWeekendMultiplierInput] = useState(pairing?.weekend_multiplier ?? 1.0);
 
   /* Currency */
   const defaultSpeciesCurrency = getCurrencyInfo(partnerProfile?.pet_species || 'puppy');
@@ -121,10 +144,13 @@ export const Settings = () => {
   const handleSavePetPersona = (e) => {
     e.preventDefault();
     updatePraiseAndSpecies(
-      species, praiseTerms,
-      species === 'custom' ? customSpeciesName.trim() : null,
+      species, praiseTerms, 
+      species === 'custom' ? customSpeciesName.trim() : null, 
       species === 'custom' ? customSpeciesIcon.trim() : null
     );
+    if (petNicknameInput.trim() !== user?.pet_nickname) {
+      updatePetNickname(petNicknameInput.trim());
+    }
   };
 
   const handleSavePageTheme = (e) => {
@@ -141,6 +167,14 @@ export const Settings = () => {
     });
   };
 
+  const handleSavePairingRules = (e) => {
+    e.preventDefault();
+    updatePairingRules({
+      maxPendingProposals: parseInt(maxProposalsInput, 10) || 3,
+      weekendMultiplier: parseFloat(weekendMultiplierInput) || 1.0
+    });
+  };
+
   const handleSaveCurrency = (e) => {
     e.preventDefault();
     if (selectedCurrencyPreset === 'default') {
@@ -151,6 +185,36 @@ export const Settings = () => {
       const preset = currencyPresets.find(p => p.id === selectedCurrencyPreset);
       if (preset) updatePairingCurrency({ name: preset.name, singular: preset.name, icon: preset.icon });
     }
+  };
+
+  const handleEnableNotifications = async () => {
+    const res = await requestNotificationPermission();
+    if (res.granted) {
+      setNotifStatus('granted');
+      scheduleLocalDailyCheckIn(reminderTimeInput);
+      showToast('iOS WebApp Push notifications enabled! 🔔', 'success');
+    } else {
+      setNotifStatus('denied');
+      showToast(res.error || 'Notifications denied in browser settings', 'warning');
+    }
+  };
+
+  const handleSaveReminderTime = (e) => {
+    e.preventDefault();
+    updateReminderTime(reminderTimeInput);
+    if (notifStatus === 'granted') {
+      scheduleLocalDailyCheckIn(reminderTimeInput);
+    }
+  };
+
+  const handleSavePin = (e) => {
+    e.preventDefault();
+    if (newPin && newPin.length !== 4) {
+      showToast('PIN must be 4 digits', 'warning');
+      return;
+    }
+    setPairingPin(newPin || null);
+    setShowPinSetupModal(false);
   };
 
   /* ── Styles ───────────────────────────────────────────────────────── */
@@ -170,9 +234,9 @@ export const Settings = () => {
 
       {/* ── Page Header ────────────────────────────────────── */}
       <div>
-        <h1 style={{ fontSize: '1.6rem' }}>Settings</h1>
+        <h1 style={{ fontSize: '1.6rem' }}>Settings & Preferences</h1>
         <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-          Personalize your experience
+          Personalize themes, daily rules, security PIN, and reminders
         </p>
       </div>
 
@@ -189,7 +253,9 @@ export const Settings = () => {
           {isPet ? <Heart size={22} color="white" /> : <Shield size={22} color="white" />}
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>{user?.username}</div>
+          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>
+            {user?.pet_nickname || user?.username}
+          </div>
           <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
             {user?.role?.toUpperCase()} · {user?.uid}
           </div>
@@ -205,41 +271,148 @@ export const Settings = () => {
         )}
       </div>
 
-      {/* ── Sound Toggle ───────────────────────────────────── */}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            backgroundColor: soundEnabled ? 'rgba(16,185,129,0.15)' : 'var(--color-surface-hover)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            {soundEnabled ? <Volume2 size={18} color="#10b981" /> : <VolumeX size={18} color="var(--color-text-muted)" />}
+      {/* ── Sound & Display Preferences ────────────────────── */}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem' }}>
+        {/* Sound Toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              backgroundColor: soundEnabled ? 'rgba(16,185,129,0.15)' : 'var(--color-surface-hover)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {soundEnabled ? <Volume2 size={18} color="#10b981" /> : <VolumeX size={18} color="var(--color-text-muted)" />}
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Sound Effects</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Chimes for praise & level ups</div>
+            </div>
           </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Sound Effects</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Chimes for praise & level ups</div>
-          </div>
+          <button
+            onClick={toggleSound}
+            style={{
+              width: '48px', height: '28px', borderRadius: 'var(--border-radius-full)',
+              backgroundColor: soundEnabled ? '#10b981' : 'var(--color-surface-hover)',
+              border: `2px solid ${soundEnabled ? '#10b981' : 'var(--color-border)'}`,
+              transition: 'all 0.2s ease', position: 'relative', cursor: 'pointer', flexShrink: 0
+            }}
+          >
+            <div style={{
+              width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white',
+              position: 'absolute', top: '2px',
+              left: soundEnabled ? 'calc(100% - 22px)' : '2px',
+              transition: 'left 0.2s ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+            }} />
+          </button>
         </div>
-        <button
-          onClick={toggleSound}
-          style={{
-            width: '48px', height: '28px', borderRadius: 'var(--border-radius-full)',
-            backgroundColor: soundEnabled ? '#10b981' : 'var(--color-surface-hover)',
-            border: `2px solid ${soundEnabled ? '#10b981' : 'var(--color-border)'}`,
-            transition: 'all 0.2s ease', position: 'relative', cursor: 'pointer', flexShrink: 0
-          }}
-        >
-          <div style={{
-            width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white',
-            position: 'absolute', top: '2px',
-            left: soundEnabled ? 'calc(100% - 22px)' : '2px',
-            transition: 'left 0.2s ease',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-          }} />
-        </button>
+
+        <div style={{ height: '1px', backgroundColor: 'var(--color-border)' }} />
+
+        {/* XP Bar Toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              backgroundColor: user?.show_xp_bar !== false ? 'rgba(139,92,246,0.15)' : 'var(--color-surface-hover)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {user?.show_xp_bar !== false ? <Eye size={18} color="var(--color-primary)" /> : <EyeOff size={18} color="var(--color-text-muted)" />}
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>XP Progress Bar</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Show level meter on Home header</div>
+            </div>
+          </div>
+          <button
+            onClick={() => toggleXPBar(user?.show_xp_bar === false ? true : false)}
+            style={{
+              width: '48px', height: '28px', borderRadius: 'var(--border-radius-full)',
+              backgroundColor: user?.show_xp_bar !== false ? 'var(--color-primary)' : 'var(--color-surface-hover)',
+              border: `2px solid ${user?.show_xp_bar !== false ? 'var(--color-primary)' : 'var(--color-border)'}`,
+              transition: 'all 0.2s ease', position: 'relative', cursor: 'pointer', flexShrink: 0
+            }}
+          >
+            <div style={{
+              width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white',
+              position: 'absolute', top: '2px',
+              left: user?.show_xp_bar !== false ? 'calc(100% - 22px)' : '2px',
+              transition: 'left 0.2s ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+            }} />
+          </button>
+        </div>
       </div>
 
-      {/* ── Page Theme & Colors ─────────────────────────────── */}
+      {/* ── 🔒 Security & Security PIN Code ────────────────── */}
+      <Section
+        icon={<Lock />}
+        title="Security & Passcode PIN"
+        subtitle="Protect sensitive actions with a 4-digit PIN"
+        accentColor="#f59e0b"
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+              {user?.pairing_pin ? '🔒 Security PIN Active' : '🔓 Security PIN Disabled'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.1rem' }}>
+              {user?.pairing_pin ? 'PIN required for approving redemptions & unpairing' : 'Add a 4-digit PIN to restrict sensitive actions'}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setNewPin(''); setShowPinSetupModal(true); }}
+            className="btn-secondary"
+            style={{ width: 'auto', padding: '0.45rem 0.875rem', fontSize: '0.8rem' }}
+          >
+            {user?.pairing_pin ? 'Change PIN' : 'Set PIN'}
+          </button>
+        </div>
+      </Section>
+
+      {/* ── ⏰ Daily Check-in Reminder Time ───────────────── */}
+      <Section
+        icon={<Bell />}
+        title="Daily Check-in Reminder"
+        subtitle="iOS WebApp & Browser Push Notifications"
+        accentColor="#3b82f6"
+      >
+        <form onSubmit={handleSaveReminderTime} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-surface-hover)' }}>
+            <div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Notification Permission</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Status: {notifStatus.toUpperCase()}</div>
+            </div>
+            <button
+              type="button"
+              onClick={handleEnableNotifications}
+              className="btn-secondary"
+              style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
+            >
+              Enable Notifications 🔔
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', alignItems: 'center' }}>
+            <div>
+              <Label>Reminder Time</Label>
+              <input
+                type="time"
+                className="input-field"
+                value={reminderTimeInput}
+                onChange={(e) => setReminderTimeInput(e.target.value)}
+                style={{ fontSize: '0.95rem', fontWeight: 700, padding: '0.65rem' }}
+              />
+            </div>
+            <button type="submit" className="btn-primary" style={{ marginTop: '1.25rem', padding: '0.65rem' }}>
+              <Check size={16} /> Save Time
+            </button>
+          </div>
+        </form>
+      </Section>
+
+      {/* ── 🎨 Page Theme & Colors ─────────────────────────── */}
       <Section
         icon={<Palette />}
         title="Page Theme & Colors"
@@ -247,8 +420,6 @@ export const Settings = () => {
         accentColor="var(--color-primary)"
       >
         <form onSubmit={handleSavePageTheme} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
-
-          {/* Environment Mode */}
           <div>
             <Label>Environment Mode</Label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -279,7 +450,6 @@ export const Settings = () => {
             </div>
           </div>
 
-          {/* Quick Palettes */}
           <div>
             <Label>Quick Palettes</Label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -298,7 +468,6 @@ export const Settings = () => {
             </div>
           </div>
 
-          {/* Color Pickers */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             {[
               { label: 'Primary', value: pagePrimary, set: setPagePrimary },
@@ -323,31 +492,68 @@ export const Settings = () => {
             ))}
           </div>
 
-          {/* Live Preview Strip */}
-          <div style={{
-            height: '48px', borderRadius: 'var(--border-radius)',
-            background: `linear-gradient(135deg, ${pagePrimary} 0%, ${pageAccent} 100%)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            boxShadow: `0 4px 20px ${pagePrimary}40`
-          }}>
-            <Zap size={14} color="rgba(255,255,255,0.9)" />
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'white', letterSpacing: '0.04em' }}>
-              PREVIEW GRADIENT
-            </span>
-          </div>
-
           <button type="submit" className="btn-primary">
             <Check size={16} /> Apply Theme
           </button>
         </form>
       </Section>
 
+      {/* ── OWNER: Proposal Limits & Weekend Multiplier ───────── */}
+      {isOwner && (
+        <Section
+          icon={<Sliders />}
+          title="Proposal Limits & Weekend Multipliers"
+          subtitle="Configure proposal limits & weekend multipliers"
+          accentColor="#ec4899"
+        >
+          <form onSubmit={handleSavePairingRules} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <Label>Max Pending Proposals</Label>
+                <input
+                  type="number"
+                  min="1" max="10"
+                  className="input-field"
+                  value={maxProposalsInput}
+                  onChange={(e) => setMaxProposalsInput(e.target.value)}
+                  style={{ textAlign: 'center', fontWeight: 700 }}
+                />
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                  Limit pending requests per pet (1-10)
+                </span>
+              </div>
+
+              <div>
+                <Label>Weekend XP Multiplier</Label>
+                <select
+                  className="input-field"
+                  value={weekendMultiplierInput}
+                  onChange={(e) => setWeekendMultiplierInput(e.target.value)}
+                  style={{ fontWeight: 700, padding: '0.65rem' }}
+                >
+                  <option value="1.0">1.0x (Standard)</option>
+                  <option value="1.5">1.5x (Bonus Weekends)</option>
+                  <option value="2.0">2.0x (Double Points)</option>
+                </select>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                  Sat & Sun point multiplier
+                </span>
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary">
+              <Check size={16} /> Save Rules & Multipliers
+            </button>
+          </form>
+        </Section>
+      )}
+
       {/* ── OWNER: Currency ────────────────────────────────── */}
       {isOwner && (
         <Section
           icon={<Coins />}
           title="Point Currency"
-          subtitle="What do your pet earns?"
+          subtitle="What does your pet earn?"
           accentColor="var(--color-accent)"
         >
           <form onSubmit={handleSaveCurrency} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
@@ -432,15 +638,26 @@ export const Settings = () => {
         </Section>
       )}
 
-      {/* ── PET: Species Persona ────────────────────────────── */}
+      {/* ── PET: Species Persona & Nickname ─────────────────── */}
       {isPet && (
         <Section
           icon={<Heart />}
-          title="Pet Persona & Praise"
-          subtitle="Your species identity and praise phrase"
+          title="Pet Persona & Nickname"
+          subtitle="Your species identity, nickname, and praise phrase"
           accentColor="var(--color-primary)"
         >
           <form onSubmit={handleSavePetPersona} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+            <div>
+              <Label>Pet Nickname / Title</Label>
+              <input 
+                type="text" 
+                className="input-field" 
+                value={petNicknameInput} 
+                onChange={e => setPetNicknameInput(e.target.value)} 
+                placeholder="e.g. Princess Fluff, Captain Bark" 
+              />
+            </div>
+
             <div>
               <Label>Species Persona</Label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -487,23 +704,92 @@ export const Settings = () => {
             </div>
 
             <button type="submit" className="btn-primary">
-              <Check size={16} /> Save Persona
+              <Check size={16} /> Save Persona & Nickname
             </button>
           </form>
         </Section>
       )}
 
-      {/* ── Account Controls ────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+      {/* ── High-Friction Account Controls ──────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginTop: '0.5rem' }}>
         {partnerProfile && (
-          <button onClick={unpair} className="btn-secondary" style={{ color: 'var(--color-red)', borderColor: 'var(--color-red)' }}>
+          <button 
+            onClick={() => setShowUnpairModal(true)} 
+            className="btn-secondary" 
+            style={{ color: 'var(--color-red)', borderColor: 'var(--color-red)' }}
+          >
             <Unlink size={16} /> Unpair from {partnerProfile.username}
           </button>
         )}
-        <button onClick={() => setUser(null)} className="btn-secondary">
+        <button onClick={() => setShowLogoutModal(true)} className="btn-secondary">
           <LogOut size={16} /> Log Out / Switch Account
         </button>
       </div>
+
+      {/* ── High-Friction Unpair Modal ──────────────────────── */}
+      <ConfirmationModal
+        isOpen={showUnpairModal}
+        title="Unpair Account?"
+        message="Unpairing will break your active calendar & reward link with your partner. To prevent accidental unpairing, type UNPAIR below:"
+        requiredWord="UNPAIR"
+        confirmText="Confirm Unpair"
+        danger={true}
+        onConfirm={() => {
+          unpair();
+          setShowUnpairModal(false);
+        }}
+        onClose={() => setShowUnpairModal(false)}
+      />
+
+      {/* ── High-Friction Logout Modal ──────────────────────── */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        title="Log Out of Tamed?"
+        message="Are you sure you want to log out of your session?"
+        confirmText="Log Out"
+        danger={false}
+        onConfirm={() => {
+          setUser(null);
+          setShowLogoutModal(false);
+        }}
+        onClose={() => setShowLogoutModal(false)}
+      />
+
+      {/* ── PIN Setup Modal ─────────────────────────────────── */}
+      {showPinSetupModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ maxWidth: '360px', width: '100%', padding: '1.5rem', border: '2px solid var(--color-primary)' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Set Security PIN</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+              Enter a 4-digit PIN code (or leave blank to remove PIN):
+            </p>
+            <form onSubmit={handleSavePin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <input
+                type="password"
+                className="input-field"
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="••••"
+                maxLength={4}
+                autoFocus
+                style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5em', fontWeight: 700 }}
+              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type="button" onClick={() => setShowPinSetupModal(false)} className="btn-secondary" style={{ flex: 1 }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                  Save PIN
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

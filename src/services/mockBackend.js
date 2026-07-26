@@ -279,6 +279,18 @@ class MockBackend {
     return db.calendar_entries.filter(c => c.pairing_id === pairingId);
   }
 
+  async updatePairingRules(pairingId, { maxPendingProposals = 3, weekendMultiplier = 1.0 }) {
+    await delay();
+    const pairing = db.pairings.find(p => p.id === pairingId);
+    if (!pairing) throw new Error("Pairing not found");
+
+    pairing.max_pending_proposals = parseInt(maxPendingProposals, 10) || 3;
+    pairing.weekend_multiplier = parseFloat(weekendMultiplier) || 1.0;
+
+    this.notify('PAIRING_UPDATED', pairing);
+    return pairing;
+  }
+
   async setCalendarEntry(pairingId, dateStr, status) {
     await delay();
     let entry = db.calendar_entries.find(c => c.pairing_id === pairingId && c.entry_date === dateStr);
@@ -286,11 +298,19 @@ class MockBackend {
 
     if (!pairing) throw new Error("Pairing not found");
 
+    // Check if weekend for multiplier
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const dayOfWeek = dateObj.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sun or Sat
+    const multiplier = (isWeekend && pairing.weekend_multiplier) ? parseFloat(pairing.weekend_multiplier) : 1.0;
+
     // Determine points for new status based on current pairing configuration
-    let newPointsAwarded = 0;
-    if (status === 'green') newPointsAwarded = pairing.point_value_green ?? 1;
-    else if (status === 'yellow') newPointsAwarded = pairing.point_value_yellow ?? 0;
-    else if (status === 'red') newPointsAwarded = pairing.point_value_red ?? 0;
+    let basePoints = 0;
+    if (status === 'green') basePoints = pairing.point_value_green ?? 1;
+    else if (status === 'yellow') basePoints = pairing.point_value_yellow ?? 0;
+    else if (status === 'red') basePoints = pairing.point_value_red ?? 0;
+
+    const newPointsAwarded = Math.round(basePoints * multiplier);
 
     const oldPointsAwarded = entry ? (entry.points_awarded ?? 0) : 0;
     const oldStatus = entry?.status;

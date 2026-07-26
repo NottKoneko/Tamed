@@ -443,6 +443,72 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  updatePetNickname: async (nickname) => {
+    const { user, showToast } = get();
+    if (!user) return;
+    try {
+      const updated = await mockBackend.updateProfile(user.id, { pet_nickname: nickname });
+      set({ user: updated });
+      showToast('Pet nickname updated! 🐾', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updateReminderTime: async (timeStr) => {
+    const { user, showToast } = get();
+    if (!user) return;
+    try {
+      const updated = await mockBackend.updateProfile(user.id, { reminder_time: timeStr });
+      set({ user: updated });
+      showToast(`Daily reminder time set to ${timeStr} ⏰`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  toggleXPBar: async (show) => {
+    const { user, showToast } = get();
+    if (!user) return;
+    try {
+      const updated = await mockBackend.updateProfile(user.id, { show_xp_bar: show });
+      set({ user: updated });
+      showToast(show ? 'XP Bar is now visible 📊' : 'XP Bar hidden 🙈', 'info');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  setPairingPin: async (pin) => {
+    const { user, showToast } = get();
+    if (!user) return;
+    try {
+      const updated = await mockBackend.updateProfile(user.id, { pairing_pin: pin });
+      set({ user: updated });
+      showToast(pin ? 'Security PIN enabled 🔒' : 'Security PIN removed 🔓', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  verifyPin: (inputPin) => {
+    const { user } = get();
+    if (!user?.pairing_pin) return true;
+    return user.pairing_pin === inputPin;
+  },
+
+  updatePairingRules: async ({ maxPendingProposals, weekendMultiplier }) => {
+    const { pairing, showToast } = get();
+    if (!pairing) return;
+    try {
+      const updated = await mockBackend.updatePairingRules(pairing.id, { maxPendingProposals, weekendMultiplier });
+      set({ pairing: updated });
+      showToast('Pairing proposal limits & weekend multiplier saved! ⚙️', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
   pairWithCode: async (code) => {
     const { user, showToast } = get();
     try {

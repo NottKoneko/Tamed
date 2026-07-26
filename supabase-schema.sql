@@ -20,10 +20,14 @@ CREATE TABLE public.profiles (
   pet_species pet_species, -- Only relevant for pets
   custom_species_name TEXT, -- e.g., 'Bunny', 'Dragon', 'Panda'
   custom_species_icon TEXT, -- e.g., '🐰', '🐲', '🐼'
+  pet_nickname TEXT,       -- Custom pet nickname e.g. 'Princess Fluff'
   custom_theme_primary TEXT DEFAULT '#8b5cf6', -- Primary accent color (HEX)
   custom_theme_accent TEXT DEFAULT '#ec4899',  -- Secondary accent color (HEX)
   custom_theme_mode TEXT DEFAULT 'dark',       -- 'light', 'dark', 'pastel'
   praise_terms TEXT,       -- Custom praise text
+  reminder_time TEXT DEFAULT '21:00', -- Daily check-in reminder time (HH:MM)
+  show_xp_bar BOOLEAN DEFAULT TRUE,   -- Toggle visibility of XP progress bar
+  pairing_pin TEXT DEFAULT NULL,      -- 4-digit security PIN for sensitive actions
   points_balance INTEGER DEFAULT 0,
   xp INTEGER DEFAULT 0,
   level INTEGER DEFAULT 1,
@@ -42,6 +46,8 @@ CREATE TABLE public.pairings (
   point_value_green INTEGER DEFAULT 1,
   point_value_yellow INTEGER DEFAULT 0,
   point_value_red INTEGER DEFAULT 0,
+  max_pending_proposals INTEGER DEFAULT 3, -- Max pending proposals allowed per pet
+  weekend_multiplier NUMERIC DEFAULT 1.0,  -- Weekend point multiplier (e.g. 1.0, 1.5, 2.0)
   custom_currency_name TEXT,     -- e.g. 'Berries', 'Cookies'
   custom_currency_singular TEXT, -- e.g. 'Berry', 'Cookie'
   custom_currency_icon TEXT,     -- e.g. '🫐', '🍪'

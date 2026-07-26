@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { formatCurrency, getCurrencyInfo } from '../utils/currency';
-import { Gift, Plus, Trash2, CheckCircle2, XCircle, Clock, Sparkles, Send, Tag, ShoppingBag, History } from 'lucide-react';
+import { PinModal } from '../components/PinModal';
+import { Gift, Plus, Trash2, CheckCircle2, XCircle, Clock, Sparkles, Send, Tag, ShoppingBag, History, Lock } from 'lucide-react';
 
 export const Rewards = () => {
   const { 
@@ -16,12 +17,17 @@ export const Rewards = () => {
     submitRewardProposal,
     redeemStoreItem,
     processProposal,
-    processRedemption
+    processRedemption,
+    showToast,
+    verifyPin
   } = useAppStore();
 
   const isOwner = user?.role === 'owner';
   const activeSpecies = user?.role === 'pet' ? user?.pet_species : (partnerProfile?.pet_species || 'puppy');
   const petPoints = user?.points_balance || partnerProfile?.points_balance || 0;
+
+  // PIN modal state
+  const [pinAction, setPinAction] = useState(null); // { type, payload }
 
   // Pet proposal form state
   const [isProposing, setIsProposing] = useState(false);
@@ -41,9 +47,20 @@ export const Rewards = () => {
     setAssignedCosts((prev) => ({ ...prev, [propId]: val }));
   };
 
+  const pendingProposals = (proposals || []).filter((p) => p.status === 'pending');
+  const pendingRedemptions = (redemptions || []).filter((r) => r.status === 'pending');
+
+  const maxProposals = pairing?.max_pending_proposals || 3;
+
   const handlePetSubmitProposal = (e) => {
     e.preventDefault();
     if (!propTitle.trim()) return;
+
+    if (pendingProposals.length >= maxProposals) {
+      showToast(`Proposal limit reached (${maxProposals} max pending). Wait for Owner approval!`, 'warning');
+      return;
+    }
+
     submitRewardProposal(propTitle.trim(), propDesc.trim());
     setPropTitle('');
     setPropDesc('');
@@ -53,6 +70,15 @@ export const Rewards = () => {
   const handleOwnerCreateStoreItem = (e) => {
     e.preventDefault();
     if (!storeItemName.trim()) return;
+
+    if (user?.pairing_pin) {
+      setPinAction({
+        type: 'CREATE_ITEM',
+        payload: { name: storeItemName.trim(), desc: storeItemDesc.trim(), points: parseInt(storeItemPoints, 10) }
+      });
+      return;
+    }
+
     createRewardItem(storeItemName.trim(), storeItemDesc.trim(), parseInt(storeItemPoints, 10));
     setStoreItemName('');
     setStoreItemDesc('');
@@ -60,13 +86,40 @@ export const Rewards = () => {
     setIsCreatingStoreItem(false);
   };
 
+  const handleOwnerApproveRedemption = (redemptionId, status) => {
+    if (user?.pairing_pin) {
+      setPinAction({
+        type: 'PROCESS_REDEMPTION',
+        payload: { id: redemptionId, status }
+      });
+      return;
+    }
+    processRedemption(redemptionId, status);
+  };
+
+  const handlePinVerifySuccess = (inputPin) => {
+    if (!verifyPin(inputPin)) return false;
+
+    if (pinAction?.type === 'CREATE_ITEM') {
+      const { name, desc, points } = pinAction.payload;
+      createRewardItem(name, desc, points);
+      setStoreItemName('');
+      setStoreItemDesc('');
+      setStoreItemPoints(1);
+      setIsCreatingStoreItem(false);
+    } else if (pinAction?.type === 'PROCESS_REDEMPTION') {
+      const { id, status } = pinAction.payload;
+      processRedemption(id, status);
+    }
+
+    setPinAction(null);
+    return true;
+  };
+
   const handleOwnerApproveProposal = (prop) => {
     const cost = assignedCosts[prop.id] !== undefined ? assignedCosts[prop.id] : (prop.assigned_points || 1);
     processProposal(prop.id, 'approved', cost);
   };
-
-  const pendingProposals = (proposals || []).filter((p) => p.status === 'pending');
-  const pendingRedemptions = (redemptions || []).filter((r) => r.status === 'pending');
 
   const redemptionStatusBadge = {
     pending: <span style={{ backgroundColor: 'var(--color-yellow)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Awaiting Owner Approval</span>,
@@ -230,14 +283,14 @@ export const Rewards = () => {
 
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                   <button
-                    onClick={() => processRedemption(red.id, 'approved')}
+                    onClick={() => handleOwnerApproveRedemption(red.id, 'approved')}
                     className="btn-primary"
                     style={{ flex: 1, padding: '0.55rem', fontSize: '0.825rem', backgroundColor: 'var(--color-green)' }}
                   >
                     <CheckCircle2 size={16} /> Approve Redemption
                   </button>
                   <button
-                    onClick={() => processRedemption(red.id, 'denied')}
+                    onClick={() => handleOwnerApproveRedemption(red.id, 'denied')}
                     className="btn-secondary"
                     style={{ flex: 1, padding: '0.55rem', fontSize: '0.825rem', color: 'var(--color-red)', borderColor: 'var(--color-red)' }}
                   >
@@ -247,6 +300,14 @@ export const Rewards = () => {
               </div>
             ))
           )}
+
+      {/* Security PIN Verification Modal */}
+      <PinModal
+        isOpen={Boolean(pinAction)}
+        title="Security Verification Required"
+        onVerify={handlePinVerifySuccess}
+        onClose={() => setPinAction(null)}
+      />
         </div>
       )}
 

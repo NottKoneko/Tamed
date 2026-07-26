@@ -88,11 +88,13 @@ export const Home = () => {
               {isOwner ? 'Master Control' : 'Pet Dashboard'}
             </span>
             <h1 style={{ fontSize: '1.4rem', color: 'white', marginTop: '0.1rem' }}>
-              {isOwner ? `Managing ${partnerProfile?.username || 'Pet'}` : `${user?.praise_terms || 'Good girl!'} ${user?.username}`}
+              {isOwner 
+                ? `Managing ${partnerProfile?.pet_nickname || partnerProfile?.username || 'Pet'}` 
+                : `${user?.praise_terms || 'Good girl!'} ${user?.pet_nickname || user?.username}`}
             </h1>
             <p style={{ fontSize: '0.825rem', opacity: 0.9, marginTop: '0.25rem' }}>
               {isOwner 
-                ? `Paired with ${partnerProfile?.username || 'No Pet'} (${partnerProfile?.uid || ''})` 
+                ? `Paired with ${partnerProfile?.pet_nickname || partnerProfile?.username || 'No Pet'} (${partnerProfile?.uid || ''})` 
                 : `Paired with ${partnerProfile?.username || 'Owner'}`}
             </p>
 
@@ -100,6 +102,11 @@ export const Home = () => {
               <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(4px)' }}>
                 Mood: {petProfile?.mood || 'Happy'}
               </span>
+              {pairing?.weekend_multiplier > 1.0 && (
+                <span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.3)', color: '#fef3c7', backdropFilter: 'blur(4px)', border: '1px solid rgba(245,158,11,0.5)' }}>
+                  ⚡ {pairing.weekend_multiplier}x Weekend Points
+                </span>
+              )}
             </div>
           </div>
 
@@ -108,7 +115,9 @@ export const Home = () => {
       </div>
 
       {/* Level & XP Progress Bar */}
-      <XPProgressBar xp={xp} level={level} />
+      {user?.show_xp_bar !== false && (
+        <XPProgressBar xp={xp} level={level} />
+      )}
 
       {/* Gamification Stats Summary Grid (Species Currency Wrapper) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
