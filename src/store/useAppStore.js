@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { mockBackend } from '../services/mockBackend';
 import { playSound, setSoundEnabled, isSoundEnabled } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
+import { applyCustomTheme } from '../utils/theme';
 
 export const useAppStore = create((set, get) => ({
   user: null, 
@@ -40,13 +41,15 @@ export const useAppStore = create((set, get) => ({
 
   setActivePraiseModal: (note) => set({ activePraiseModal: note }),
 
-  setUser: async (user) => {
+  setUser: (user) => {
     set({ user });
     if (user) {
-      document.documentElement.setAttribute('data-theme', user.pet_species || 'puppy');
-      await get().loadPairingData();
+      applyCustomTheme(user);
+      get().loadPairingData();
       get().setupRealtime();
     } else {
+      const unsub = get().unsubscribeRealtime;
+      if (unsub) unsub();
       set({ pairing: null, partnerProfile: null, calendarEntries: [], proposals: [], rewardItems: [], redemptions: [], dailyTasks: [], praiseNotes: [] });
     }
   },
@@ -399,19 +402,41 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  updatePraiseAndSpecies: async (species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null) => {
+  updatePraiseAndSpecies: async (species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null, customThemePrimary = null, customThemeAccent = null) => {
     const { user, showToast } = get();
     try {
-      const updated = await mockBackend.updateProfile(user.id, { 
+      const updates = { 
         pet_species: species, 
         praise_terms: praiseTerms,
         custom_species_name: customSpeciesName,
         custom_species_icon: customSpeciesIcon
-      });
+      };
+      if (customThemePrimary) updates.custom_theme_primary = customThemePrimary;
+      if (customThemeAccent) updates.custom_theme_accent = customThemeAccent;
+
+      const updated = await mockBackend.updateProfile(user.id, updates);
       set({ user: updated });
-      document.documentElement.setAttribute('data-theme', species);
+      applyCustomTheme(updated);
       playSound('praise');
       showToast('Profile & species settings saved!', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updateCustomTheme: async (primary, accent) => {
+    const { user, showToast } = get();
+    if (!user) return;
+    try {
+      const updated = await mockBackend.updateProfile(user.id, {
+        custom_theme_primary: primary,
+        custom_theme_accent: accent
+      });
+      set({ user: updated });
+      applyCustomTheme(updated);
+      playSound('praise');
+      triggerConfetti();
+      showToast('Custom theme colors saved successfully! 🎨', 'success');
     } catch (err) {
       showToast(err.message, 'warning');
     }

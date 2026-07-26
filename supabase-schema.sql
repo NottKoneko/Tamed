@@ -11,7 +11,7 @@ CREATE TYPE proposal_status AS ENUM ('pending', 'approved', 'denied');
 CREATE TYPE redemption_status AS ENUM ('pending', 'approved', 'denied');
 CREATE TYPE praise_type AS ENUM ('headpat', 'treat', 'note');
 
--- 2. PROFILES TABLE (Includes XP, Level, Mood, and Custom Species Logic)
+-- 2. PROFILES TABLE (Includes XP, Level, Mood, Custom Species & Custom Theme Logic)
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   uid TEXT UNIQUE NOT NULL, -- e.g., 'Username#9021'
@@ -20,6 +20,9 @@ CREATE TABLE public.profiles (
   pet_species pet_species, -- Only relevant for pets
   custom_species_name TEXT, -- e.g., 'Bunny', 'Dragon', 'Panda'
   custom_species_icon TEXT, -- e.g., '🐰', '🐲', '🐼'
+  custom_theme_primary TEXT DEFAULT '#8b5cf6', -- Primary accent color (HEX)
+  custom_theme_accent TEXT DEFAULT '#ec4899',  -- Secondary accent color (HEX)
+  custom_theme_mode TEXT DEFAULT 'dark',       -- 'light', 'dark', 'pastel'
   praise_terms TEXT,       -- Custom praise text
   points_balance INTEGER DEFAULT 0,
   xp INTEGER DEFAULT 0,

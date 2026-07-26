@@ -9,6 +9,8 @@ export const Onboarding = () => {
   const [species, setSpecies] = useState('puppy');
   const [customSpeciesName, setCustomSpeciesName] = useState('Bunny');
   const [customSpeciesIcon, setCustomSpeciesIcon] = useState('🐰');
+  const [primaryColor, setPrimaryColor] = useState('#8b5cf6');
+  const [accentColor, setAccentColor] = useState('#ec4899');
   const [praiseTerms, setPraiseTerms] = useState('Good girl!');
   const [pairingCode, setPairingCode] = useState('');
   const [step, setStep] = useState(1);
@@ -32,7 +34,9 @@ export const Onboarding = () => {
         species, 
         praiseTerms.trim(), 
         species === 'custom' ? customSpeciesName.trim() : null, 
-        species === 'custom' ? customSpeciesIcon.trim() : null
+        species === 'custom' ? customSpeciesIcon.trim() : null,
+        species === 'custom' ? primaryColor : '#8b5cf6',
+        species === 'custom' ? accentColor : '#ec4899'
       );
       await setUser(profile);
       await pairWithCode(pairingCode.trim());
@@ -40,6 +44,14 @@ export const Onboarding = () => {
       showToast(err.message || 'Pairing failed. Try Master#1234', 'warning');
     }
   };
+
+  const themePalettes = [
+    { label: 'Neon Violet', primary: '#8b5cf6', accent: '#ec4899' },
+    { label: 'Emerald Mint', primary: '#10b981', accent: '#06b6d4' },
+    { label: 'Sunset Coral', primary: '#f97316', accent: '#f59e0b' },
+    { label: 'Ocean Cyber', primary: '#0284c7', accent: '#6366f1' },
+    { label: 'Midnight Rose', primary: '#be185d', accent: '#9333ea' }
+  ];
 
   const speciesOptions = [
     { id: 'puppy', label: 'Puppy 🐶', desc: 'Pastel pinks & paw prints' },
@@ -194,32 +206,99 @@ export const Onboarding = () => {
 
           {/* Custom Persona Details */}
           {species === 'custom' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem', backgroundColor: 'var(--color-surface-hover)', padding: '0.875rem', borderRadius: 'var(--border-radius)' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
-                  Species Emoji
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={customSpeciesIcon}
-                  onChange={(e) => setCustomSpeciesIcon(e.target.value)}
-                  placeholder="e.g. 🐰"
-                  style={{ textAlign: 'center', fontSize: '1.1rem' }}
-                  maxLength={4}
-                />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem', backgroundColor: 'var(--color-surface-hover)', padding: '0.875rem', borderRadius: 'var(--border-radius)' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                    Species Emoji
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={customSpeciesIcon}
+                    onChange={(e) => setCustomSpeciesIcon(e.target.value)}
+                    placeholder="e.g. 🐰"
+                    style={{ textAlign: 'center', fontSize: '1.1rem' }}
+                    maxLength={4}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                    Custom Species Name
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={customSpeciesName}
+                    onChange={(e) => setCustomSpeciesName(e.target.value)}
+                    placeholder="e.g. Bunny, Dragon, Panda"
+                  />
+                </div>
               </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
-                  Custom Species Name
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={customSpeciesName}
-                  onChange={(e) => setCustomSpeciesName(e.target.value)}
-                  placeholder="e.g. Bunny, Dragon, Panda"
-                />
+
+              {/* Custom Theme Prompt Card */}
+              <div style={{ 
+                padding: '1rem', 
+                borderRadius: 'var(--border-radius)', 
+                background: `linear-gradient(135deg, ${primaryColor}22 0%, ${accentColor}22 100%)`, 
+                border: `1.5px solid ${primaryColor}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
+              }}>
+                <div>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--color-text-main)', display: 'block' }}>
+                    🎨 Custom Pet Theme Configurator
+                  </strong>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                    Pick a curated palette or customize your theme colors:
+                  </span>
+                </div>
+
+                {/* Preset Palettes */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                  {themePalettes.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => { setPrimaryColor(p.primary); setAccentColor(p.accent); }}
+                      style={{
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: 'var(--border-radius-full)',
+                        border: primaryColor === p.primary ? '2px solid var(--color-text-main)' : '1px solid var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        fontSize: '0.725rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: p.primary }} />
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: p.accent }} />
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Live Color Inputs */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Primary Accent</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} style={{ width: '32px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }} />
+                      <input type="text" className="input-field" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} style={{ fontSize: '0.75rem', padding: '0.3rem' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Secondary Accent</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: '32px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }} />
+                      <input type="text" className="input-field" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ fontSize: '0.75rem', padding: '0.3rem' }} />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

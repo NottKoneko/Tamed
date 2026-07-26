@@ -24,6 +24,8 @@ export const Settings = () => {
   const [species, setSpecies] = useState(user?.pet_species || 'puppy');
   const [customSpeciesName, setCustomSpeciesName] = useState(user?.custom_species_name || 'Bunny');
   const [customSpeciesIcon, setCustomSpeciesIcon] = useState(user?.custom_species_icon || '🐰');
+  const [themePrimary, setThemePrimary] = useState(user?.custom_theme_primary || '#8b5cf6');
+  const [themeAccent, setThemeAccent] = useState(user?.custom_theme_accent || '#ec4899');
   const [praiseTerms, setPraiseTerms] = useState(user?.praise_terms || 'Good girl!');
 
   // Owner daily point value state
@@ -39,13 +41,23 @@ export const Settings = () => {
   const [customEmoji, setCustomEmoji] = useState(pairing?.custom_currency_icon || '🍪');
   const [customName, setCustomName] = useState(pairing?.custom_currency_name || 'Cookies');
 
+  const themePalettes = [
+    { label: 'Neon Violet 💜', primary: '#8b5cf6', accent: '#ec4899' },
+    { label: 'Emerald Mint 💚', primary: '#10b981', accent: '#06b6d4' },
+    { label: 'Sunrise Coral 🌅', primary: '#f97316', accent: '#f59e0b' },
+    { label: 'Ocean Cyber 🌊', primary: '#0284c7', accent: '#6366f1' },
+    { label: 'Midnight Rose 🌹', primary: '#be185d', accent: '#9333ea' }
+  ];
+
   const handleSave = (e) => {
     e.preventDefault();
     updatePraiseAndSpecies(
       species, 
       praiseTerms, 
       species === 'custom' ? customSpeciesName.trim() : null, 
-      species === 'custom' ? customSpeciesIcon.trim() : null
+      species === 'custom' ? customSpeciesIcon.trim() : null,
+      species === 'custom' ? themePrimary : null,
+      species === 'custom' ? themeAccent : null
     );
   };
 
@@ -321,34 +333,101 @@ export const Settings = () => {
             </div>
           </div>
 
-          {/* Custom Species Persona Details */}
+          {/* Custom Species Persona Details & Theme Configurator */}
           {species === 'custom' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem', backgroundColor: 'var(--color-surface-hover)', padding: '0.875rem', borderRadius: 'var(--border-radius)' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
-                  Species Emoji
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={customSpeciesIcon}
-                  onChange={(e) => setCustomSpeciesIcon(e.target.value)}
-                  placeholder="e.g. 🐰"
-                  style={{ textAlign: 'center', fontSize: '1.1rem' }}
-                  maxLength={4}
-                />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem', backgroundColor: 'var(--color-surface-hover)', padding: '0.875rem', borderRadius: 'var(--border-radius)' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                    Species Emoji
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={customSpeciesIcon}
+                    onChange={(e) => setCustomSpeciesIcon(e.target.value)}
+                    placeholder="e.g. 🐰"
+                    style={{ textAlign: 'center', fontSize: '1.1rem' }}
+                    maxLength={4}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                    Custom Species Name
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={customSpeciesName}
+                    onChange={(e) => setCustomSpeciesName(e.target.value)}
+                    placeholder="e.g. Bunny, Dragon, Panda"
+                  />
+                </div>
               </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
-                  Custom Species Name
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={customSpeciesName}
-                  onChange={(e) => setCustomSpeciesName(e.target.value)}
-                  placeholder="e.g. Bunny, Dragon, Panda"
-                />
+
+              {/* Custom Theme Designer Card */}
+              <div style={{ 
+                padding: '1rem', 
+                borderRadius: 'var(--border-radius)', 
+                background: `linear-gradient(135deg, ${themePrimary}22 0%, ${themeAccent}22 100%)`, 
+                border: `1.5px solid ${themePrimary}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
+              }}>
+                <div>
+                  <strong style={{ fontSize: '0.95rem', color: 'var(--color-text-main)', display: 'block' }}>
+                    🎨 Custom Theme Designer
+                  </strong>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                    Customize your app's primary and secondary accent colors:
+                  </span>
+                </div>
+
+                {/* Preset Palettes */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                  {themePalettes.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => { setThemePrimary(p.primary); setThemeAccent(p.accent); }}
+                      style={{
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: 'var(--border-radius-full)',
+                        border: themePrimary === p.primary ? '2px solid var(--color-text-main)' : '1px solid var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        fontSize: '0.725rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: p.primary }} />
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: p.accent }} />
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Live Color Pickers */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Primary Accent</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <input type="color" value={themePrimary} onChange={(e) => setThemePrimary(e.target.value)} style={{ width: '32px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }} />
+                      <input type="text" className="input-field" value={themePrimary} onChange={(e) => setThemePrimary(e.target.value)} style={{ fontSize: '0.75rem', padding: '0.3rem' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Secondary Accent</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <input type="color" value={themeAccent} onChange={(e) => setThemeAccent(e.target.value)} style={{ width: '32px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }} />
+                      <input type="text" className="input-field" value={themeAccent} onChange={(e) => setThemeAccent(e.target.value)} style={{ fontSize: '0.75rem', padding: '0.3rem' }} />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

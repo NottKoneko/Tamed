@@ -159,7 +159,7 @@ class MockBackend {
     return profile;
   }
 
-  async loginPet(username, species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null) {
+  async loginPet(username, species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null, customThemePrimary = '#8b5cf6', customThemeAccent = '#ec4899') {
     await delay();
     let profile = db.profiles.find(p => p.username === username && p.role === 'pet');
     if (!profile) {
@@ -172,6 +172,8 @@ class MockBackend {
         pet_species: species, 
         custom_species_name: customSpeciesName,
         custom_species_icon: customSpeciesIcon,
+        custom_theme_primary: customThemePrimary,
+        custom_theme_accent: customThemeAccent,
         praise_terms: praiseTerms, 
         points_balance: 0, 
         xp: 0, 
