@@ -72,7 +72,7 @@ export const applyCustomTheme = (profile) => {
 
   const primary = customPrimary || '#8b5cf6';
   const accent = customAccent || '#ec4899';
-  const modeConfig = THEME_MODES[customMode] || THEME_MODES.dark;
+  const modeConfig = THEME_MODES[customMode] || THEME_MODES.light;
   const shadowBase = modeConfig.shadowBase;
   const shadowAlpha = parseFloat(modeConfig.shadowAlpha);
 

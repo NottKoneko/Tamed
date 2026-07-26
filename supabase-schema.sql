@@ -23,7 +23,7 @@ CREATE TABLE public.profiles (
   pet_nickname TEXT,       -- Custom pet nickname e.g. 'Princess Fluff'
   custom_theme_primary TEXT DEFAULT '#8b5cf6', -- Primary accent color (HEX)
   custom_theme_accent TEXT DEFAULT '#ec4899',  -- Secondary accent color (HEX)
-  custom_theme_mode TEXT DEFAULT 'dark',       -- 'light', 'dark', 'pastel'
+  custom_theme_mode TEXT DEFAULT 'light',      -- 'light', 'dark', 'pastel'
   praise_terms TEXT,       -- Custom praise text
   timezone TEXT DEFAULT 'America/Los_Angeles', -- User active timezone
   reminder_time TEXT DEFAULT '21:00', -- Daily check-in reminder time (HH:MM)
