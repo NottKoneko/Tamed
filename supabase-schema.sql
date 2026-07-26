@@ -15,6 +15,7 @@ CREATE TYPE praise_type AS ENUM ('headpat', 'treat', 'note');
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   uid TEXT UNIQUE NOT NULL, -- e.g., 'Username#9021'
+  pair_code TEXT UNIQUE,   -- 6-digit pairing PIN code (e.g. '849201')
   role user_role NOT NULL,
   username TEXT NOT NULL,
   pet_species pet_species, -- Only relevant for pets

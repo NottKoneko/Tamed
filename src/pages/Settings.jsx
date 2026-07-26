@@ -5,11 +5,10 @@ import { THEME_MODES } from '../utils/theme';
 import { requestNotificationPermission, scheduleLocalDailyCheckIn } from '../utils/notifications';
 import { TIMEZONE_OPTIONS } from './Onboarding';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { PinModal } from '../components/PinModal';
 import { 
   Palette, Heart, LogOut, Unlink, Check, Shield, 
   Volume2, VolumeX, Coins, ChevronDown, ChevronUp, Zap, 
-  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe
+  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe, Link
 } from 'lucide-react';
 
 /* ───── Collapsible Section Component ──────────────────────────────── */
@@ -63,8 +62,8 @@ export const Settings = () => {
   const { 
     user, pairing, partnerProfile, 
     updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency, 
-    updateCustomTheme, updatePetNickname, updateReminderTime, updateTimezone, toggleXPBar, setPairingPin, 
-    updatePairingRules, unpair, setUser, soundEnabled, toggleSound, showToast 
+    updateCustomTheme, updatePetNickname, updateReminderTime, updateTimezone, toggleXPBar, 
+    updatePairingRules, pairWithCode, unpair, setUser, soundEnabled, toggleSound, showToast 
   } = useAppStore();
 
   const isPet = user?.role === 'pet';
@@ -73,8 +72,9 @@ export const Settings = () => {
   /* Modals */
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showUnpairModal, setShowUnpairModal] = useState(false);
-  const [showPinSetupModal, setShowPinSetupModal] = useState(false);
-  const [newPin, setNewPin] = useState('');
+
+  /* Pairing input state */
+  const [pairInput, setPairInput] = useState('');
 
   /* Pet Persona state */
   const [species, setSpecies] = useState(user?.pet_species || 'puppy');
@@ -82,6 +82,17 @@ export const Settings = () => {
   const [customSpeciesIcon, setCustomSpeciesIcon] = useState(user?.custom_species_icon || '🐰');
   const [petNicknameInput, setPetNicknameInput] = useState(user?.pet_nickname || '');
   const [praiseTerms, setPraiseTerms] = useState(user?.praise_terms || 'Good girl!');
+
+  const handlePairSubmit = async (e) => {
+    e.preventDefault();
+    if (!pairInput.trim()) return;
+    try {
+      await pairWithCode(pairInput.trim());
+      setPairInput('');
+    } catch (err) {
+      // Toast already handled by store
+    }
+  };
 
   /* Timezone state */
   const [timezoneInput, setTimezoneInput] = useState(user?.timezone || 'America/Los_Angeles');
@@ -348,33 +359,67 @@ export const Settings = () => {
         </div>
       </div>
 
-      {/* ── 📺 Account Pairing Code / TV PIN ────────────────── */}
+      {/* ── 🔗 Pair Accounts Section ────────────────── */}
       <Section
-        icon={<Lock />}
-        title="TV-Style Pairing PIN"
-        subtitle="Numeric PIN code used to link accounts like a Smart TV"
-        accentColor="#f59e0b"
+        icon={<Link />}
+        title={pairing ? "Pairing Status" : "Pair Accounts"}
+        subtitle={pairing ? `Linked with ${partnerProfile?.username || 'Partner'}` : "Connect your dashboard with your partner's 6-digit pair code"}
+        accentColor="#8b5cf6"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-          <div style={{ padding: '0.875rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Display Current User's 6-Digit Pair Code */}
+          <div style={{
+            padding: '1rem', borderRadius: 'var(--border-radius)',
+            backgroundColor: 'var(--color-surface-hover)', border: '1.5px solid var(--color-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
             <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Your Pairing PIN</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--color-primary-dark)', marginTop: '0.1rem' }}>
-                {user?.pairing_pin || user?.uid || '8492'}
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Your Username & 6-Digit Pair Code
+              </div>
+              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-text-main)', marginTop: '0.15rem' }}>
+                {user?.username} <span style={{ opacity: 0.6, fontSize: '0.8rem' }}>({user?.uid})</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => { setNewPin(user?.pairing_pin || ''); setShowPinSetupModal(true); }}
-              className="btn-secondary"
-              style={{ width: 'auto', padding: '0.45rem 0.875rem', fontSize: '0.8rem' }}
-            >
-              {user?.pairing_pin ? 'Edit TV PIN' : 'Set Custom PIN'}
-            </button>
+            <div style={{
+              padding: '0.5rem 0.875rem', borderRadius: '12px',
+              backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary-dark)',
+              fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.15em', fontFamily: 'monospace'
+            }}>
+              {user?.pair_code || '849201'}
+            </div>
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-            Pets enter this TV-style pairing code during onboarding to link their account with your dashboard.
-          </p>
+
+          {/* Form to enter Partner's Code (Shown if not paired) */}
+          {!pairing && (
+            <form onSubmit={handlePairSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <div>
+                <Label>Enter Partner's 6-Digit Pair Code or Username</Label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g. 567812 or Puppy#5678"
+                    value={pairInput}
+                    onChange={(e) => setPairInput(e.target.value)}
+                    style={{ fontWeight: 700, letterSpacing: '0.05em' }}
+                  />
+                  <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.25rem', flexShrink: 0 }} disabled={!pairInput.trim()}>
+                    <Link size={16} /> Pair
+                  </button>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                Share your 6-digit code with your partner or enter their code above to link your accounts together!
+              </p>
+            </form>
+          )}
+
+          {pairing && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-green)', fontWeight: 700, fontSize: '0.875rem' }}>
+              <Check size={18} /> Active Pair Link: {user?.username} ↔ {partnerProfile?.username}
+            </div>
+          )}
         </div>
       </Section>
 
@@ -788,42 +833,6 @@ export const Settings = () => {
         }}
         onClose={() => setShowLogoutModal(false)}
       />
-
-      {/* ── PIN Setup Modal ─────────────────────────────────── */}
-      {showPinSetupModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-        }}>
-          <div className="card" style={{ maxWidth: '360px', width: '100%', padding: '1.5rem', border: '2px solid var(--color-primary)' }}>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Set Security PIN</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
-              Enter a 4-digit PIN code (or leave blank to remove PIN):
-            </p>
-            <form onSubmit={handleSavePin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <input
-                type="password"
-                className="input-field"
-                value={newPin}
-                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="••••"
-                maxLength={4}
-                autoFocus
-                style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5em', fontWeight: 700 }}
-              />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="button" onClick={() => setShowPinSetupModal(false)} className="btn-secondary" style={{ flex: 1 }}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  Save PIN
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );

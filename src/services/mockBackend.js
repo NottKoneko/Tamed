@@ -24,6 +24,7 @@ const seedData = () => {
     { 
       id: ownerId, 
       uid: 'Master#1234', 
+      pair_code: '849201',
       role: 'owner', 
       username: 'Master Alex', 
       points_balance: 0,
@@ -34,6 +35,7 @@ const seedData = () => {
     { 
       id: petId, 
       uid: 'Puppy#5678', 
+      pair_code: '567812',
       role: 'pet', 
       username: 'Little Fox', 
       pet_species: 'fox', 
@@ -148,12 +150,14 @@ class MockBackend {
   }
 
   // --- Auth & Profiles ---
+  // --- Auth & Profiles ---
   async loginOwner(username) {
     await delay();
     let profile = db.profiles.find(p => p.username === username && p.role === 'owner');
     if (!profile) {
       const uid = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
-      profile = { id: uuidv4(), uid, role: 'owner', username, points_balance: 0, xp: 0, level: 1, mood: 'Happy' };
+      const pair_code = Math.floor(100000 + Math.random() * 900000).toString();
+      profile = { id: uuidv4(), uid, pair_code, role: 'owner', username, points_balance: 0, xp: 0, level: 1, mood: 'Happy' };
       db.profiles.push(profile);
     }
     return profile;
@@ -164,9 +168,11 @@ class MockBackend {
     let profile = db.profiles.find(p => p.username === username && p.role === 'pet');
     if (!profile) {
       const uid = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
+      const pair_code = Math.floor(100000 + Math.random() * 900000).toString();
       profile = { 
         id: uuidv4(), 
         uid, 
+        pair_code,
         role: 'pet', 
         username, 
         pet_species: species, 
@@ -241,16 +247,29 @@ class MockBackend {
   }
 
   // --- Pairings ---
-  async pairWithCode(petId, ownerUid) {
+  async pairWithCode(currentUserId, targetCodeOrUid) {
     await delay();
-    const owner = db.profiles.find(p => p.uid === ownerUid && p.role === 'owner');
-    if (!owner) throw new Error("Invalid pairing code");
-    
-    let pairing = db.pairings.find(p => p.owner_id === owner.id && p.pet_id === petId);
+    const cleanCode = targetCodeOrUid.trim();
+    const me = db.profiles.find(p => p.id === currentUserId);
+    if (!me) throw new Error("User profile not found");
+
+    // Find target by pair_code, uid, or username
+    const target = db.profiles.find(
+      p => (p.pair_code === cleanCode || p.uid === cleanCode || p.username.toLowerCase() === cleanCode.toLowerCase()) && p.id !== me.id
+    );
+
+    if (!target) {
+      throw new Error(`Partner not found with code "${cleanCode}". Try Master#1234 or 849201!`);
+    }
+
+    const ownerId = me.role === 'owner' ? me.id : target.id;
+    const petId = me.role === 'pet' ? me.id : target.id;
+
+    let pairing = db.pairings.find(p => p.owner_id === ownerId && p.pet_id === petId);
     if (!pairing) {
       pairing = { 
         id: uuidv4(), 
-        owner_id: owner.id, 
+        owner_id: ownerId, 
         pet_id: petId, 
         status: 'active',
         point_value_green: 1,
@@ -259,6 +278,7 @@ class MockBackend {
       };
       db.pairings.push(pairing);
     }
+    this.notify('PAIRING_CREATED', pairing);
     return pairing;
   }
 
