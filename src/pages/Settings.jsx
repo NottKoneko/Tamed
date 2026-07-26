@@ -22,6 +22,8 @@ export const Settings = () => {
 
   // Pet state
   const [species, setSpecies] = useState(user?.pet_species || 'puppy');
+  const [customSpeciesName, setCustomSpeciesName] = useState(user?.custom_species_name || 'Bunny');
+  const [customSpeciesIcon, setCustomSpeciesIcon] = useState(user?.custom_species_icon || '🐰');
   const [praiseTerms, setPraiseTerms] = useState(user?.praise_terms || 'Good girl!');
 
   // Owner daily point value state
@@ -39,7 +41,12 @@ export const Settings = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
-    updatePraiseAndSpecies(species, praiseTerms);
+    updatePraiseAndSpecies(
+      species, 
+      praiseTerms, 
+      species === 'custom' ? customSpeciesName.trim() : null, 
+      species === 'custom' ? customSpeciesIcon.trim() : null
+    );
   };
 
   const handleSavePointValues = (e) => {
@@ -313,6 +320,38 @@ export const Settings = () => {
               })}
             </div>
           </div>
+
+          {/* Custom Species Persona Details */}
+          {species === 'custom' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem', backgroundColor: 'var(--color-surface-hover)', padding: '0.875rem', borderRadius: 'var(--border-radius)' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                  Species Emoji
+                </label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={customSpeciesIcon}
+                  onChange={(e) => setCustomSpeciesIcon(e.target.value)}
+                  placeholder="e.g. 🐰"
+                  style={{ textAlign: 'center', fontSize: '1.1rem' }}
+                  maxLength={4}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                  Custom Species Name
+                </label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={customSpeciesName}
+                  onChange={(e) => setCustomSpeciesName(e.target.value)}
+                  placeholder="e.g. Bunny, Dragon, Panda"
+                />
+              </div>
+            </div>
+          )}
 
           <div>
             <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>

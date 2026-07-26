@@ -399,14 +399,19 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  updatePraiseAndSpecies: async (species, praiseTerms) => {
+  updatePraiseAndSpecies: async (species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null) => {
     const { user, showToast } = get();
     try {
-      const updated = await mockBackend.updateProfile(user.id, { pet_species: species, praise_terms: praiseTerms });
+      const updated = await mockBackend.updateProfile(user.id, { 
+        pet_species: species, 
+        praise_terms: praiseTerms,
+        custom_species_name: customSpeciesName,
+        custom_species_icon: customSpeciesIcon
+      });
       set({ user: updated });
       document.documentElement.setAttribute('data-theme', species);
       playSound('praise');
-      showToast('Settings saved successfully!', 'success');
+      showToast('Profile & species settings saved!', 'success');
     } catch (err) {
       showToast(err.message, 'warning');
     }

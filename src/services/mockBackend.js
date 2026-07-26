@@ -159,12 +159,25 @@ class MockBackend {
     return profile;
   }
 
-  async loginPet(username, species, praiseTerms) {
+  async loginPet(username, species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null) {
     await delay();
     let profile = db.profiles.find(p => p.username === username && p.role === 'pet');
     if (!profile) {
       const uid = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
-      profile = { id: uuidv4(), uid, role: 'pet', username, pet_species: species, praise_terms: praiseTerms, points_balance: 0, xp: 0, level: 1, mood: 'Happy' };
+      profile = { 
+        id: uuidv4(), 
+        uid, 
+        role: 'pet', 
+        username, 
+        pet_species: species, 
+        custom_species_name: customSpeciesName,
+        custom_species_icon: customSpeciesIcon,
+        praise_terms: praiseTerms, 
+        points_balance: 0, 
+        xp: 0, 
+        level: 1, 
+        mood: 'Happy' 
+      };
       db.profiles.push(profile);
     }
     return profile;

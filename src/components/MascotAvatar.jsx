@@ -53,7 +53,7 @@ export const MascotAvatar = ({ profile, isEditable = false }) => {
           fontSize: '2.75rem',
           boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
         }}>
-          {speciesIcons[species] || '✨'}
+          {species === 'custom' ? (profile?.custom_species_icon || '✨') : (speciesIcons[species] || '✨')}
         </div>
         <span style={{
           position: 'absolute',
