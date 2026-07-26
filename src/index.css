@@ -3,22 +3,62 @@
 :root {
   /* Typography */
   --font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  
+
   /* ========================================== */
-  /* THEME: CUSTOM / SLATE (Neutral Baseline)   */
+  /* DEFAULT THEME: Midnight Dark               */
   /* ========================================== */
-  --color-primary: #475569;     
-  --color-primary-light: #cbd5e1; 
-  --color-primary-dark: #1e293b;  
-  --color-accent: #3b82f6;      
-  
+  --color-primary: #8b5cf6;
+  --color-primary-light: #c4b5fd;
+  --color-primary-dark: #6d28d9;
+  --color-accent: #ec4899;
+
+  --color-surface: #1e1b2e;
+  --color-surface-hover: #2d2a42;
+  --color-background: #13111e;
+
+  --color-text-main: #f8fafc;
+  --color-text-muted: #94a3b8;
+
+  --color-green: #10b981;
+  --color-green-light: rgba(16,185,129,0.15);
+  --color-yellow: #f59e0b;
+  --color-yellow-light: rgba(245,158,11,0.15);
+  --color-red: #ef4444;
+  --color-red-light: rgba(239,68,68,0.15);
+
+  --color-border: rgba(255, 255, 255, 0.08);
+  --gradient-hero: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  --gradient-card: linear-gradient(135deg, #1e1b2e 0%, #13111e 100%);
+
+  /* Shared variables */
+  --transition-speed: 0.25s;
+  --border-radius-sm: 0.625rem;
+  --border-radius: 1rem;
+  --border-radius-lg: 1.5rem;
+  --border-radius-full: 9999px;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px rgba(139, 92, 246, 0.35);
+}
+
+/* ========================================== */
+/* THEME: PUPPY (Pastel Pink & Purple)        */
+/* ========================================== */
+[data-theme="puppy"] {
+  --color-primary: #ec4899;
+  --color-primary-light: #fbcfe8;
+  --color-primary-dark: #be185d;
+  --color-accent: #a855f7;
+
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f5f9;
-  --color-background: #f8fafc;
-  
-  --color-text-main: #0f172a;
-  --color-text-muted: #64748b;
-  
+  --color-surface-hover: #fdf2f8;
+  --color-background: #fdf4ff;
+
+  --color-text-main: #3b0764;
+  --color-text-muted: #86198f;
+
   --color-green: #10b981;
   --color-green-light: #d1fae5;
   --color-yellow: #f59e0b;
@@ -26,84 +66,77 @@
   --color-red: #ef4444;
   --color-red-light: #fee2e2;
 
-  --color-border: #e2e8f0;
-  --gradient-hero: linear-gradient(135deg, #64748b 0%, #334155 100%);
-  --gradient-card: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  
-  /* Shared variables */
-  --transition-speed: 0.25s;
-  --border-radius-sm: 0.625rem;
-  --border-radius: 1rem;
-  --border-radius-lg: 1.5rem;
-  --border-radius-full: 9999px;
-  
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 6px 16px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 16px 32px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 20px rgba(71, 85, 105, 0.2);
-}
-
-/* ========================================== */
-/* THEME: PUPPY (Pastel Pink & Purple)        */
-/* ========================================== */
-[data-theme="puppy"] {
-  --color-primary: #ec4899;      
-  --color-primary-light: #fbcfe8; 
-  --color-primary-dark: #be185d;  
-  --color-accent: #a855f7;      
-  
-  --color-surface: #ffffff;
-  --color-surface-hover: #fdf2f8; 
-  --color-background: #faf5ff;   
-  
-  --color-text-main: #3b0764;    
-  --color-text-muted: #86198f;   
   --color-border: #f5d0fe;
   --gradient-hero: linear-gradient(135deg, #f472b6 0%, #c084fc 100%);
   --gradient-card: linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%);
-  --shadow-glow: 0 0 25px rgba(236, 72, 153, 0.25);
+  --shadow-sm: 0 2px 8px rgba(236, 72, 153, 0.08);
+  --shadow-md: 0 6px 24px rgba(236, 72, 153, 0.12);
+  --shadow-lg: 0 16px 48px rgba(236, 72, 153, 0.18);
+  --shadow-glow: 0 0 30px rgba(236, 72, 153, 0.3);
 }
 
 /* ========================================== */
 /* THEME: KITTY (Soft Blues & Lilacs)         */
 /* ========================================== */
 [data-theme="kitty"] {
-  --color-primary: #6366f1;      
-  --color-primary-light: #c7d2fe; 
-  --color-primary-dark: #3730a3;  
-  --color-accent: #a855f7;      
-  
+  --color-primary: #6366f1;
+  --color-primary-light: #c7d2fe;
+  --color-primary-dark: #3730a3;
+  --color-accent: #a855f7;
+
   --color-surface: #ffffff;
-  --color-surface-hover: #eff6ff; 
-  --color-background: #f0fdfa;   
-  
-  --color-text-main: #1e1b4b;    
-  --color-text-muted: #4338ca;   
+  --color-surface-hover: #eff6ff;
+  --color-background: #f0f4ff;
+
+  --color-text-main: #1e1b4b;
+  --color-text-muted: #4338ca;
+
+  --color-green: #10b981;
+  --color-green-light: #d1fae5;
+  --color-yellow: #f59e0b;
+  --color-yellow-light: #fef3c7;
+  --color-red: #ef4444;
+  --color-red-light: #fee2e2;
+
   --color-border: #c7d2fe;
   --gradient-hero: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
   --gradient-card: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
-  --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.25);
+  --shadow-sm: 0 2px 8px rgba(99, 102, 241, 0.08);
+  --shadow-md: 0 6px 24px rgba(99, 102, 241, 0.12);
+  --shadow-lg: 0 16px 48px rgba(99, 102, 241, 0.18);
+  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.3);
 }
 
 /* ========================================== */
 /* THEME: FOX (Burnt Oranges, Ambers, Earth)  */
 /* ========================================== */
 [data-theme="fox"] {
-  --color-primary: #ea580c;      
-  --color-primary-light: #fed7aa; 
-  --color-primary-dark: #7c2d12;  
-  --color-accent: #d97706;      
-  
+  --color-primary: #ea580c;
+  --color-primary-light: #fed7aa;
+  --color-primary-dark: #7c2d12;
+  --color-accent: #d97706;
+
   --color-surface: #ffffff;
-  --color-surface-hover: #fff7ed; 
-  --color-background: #fffbeb;   
-  
-  --color-text-main: #451a03;    
-  --color-text-muted: #9a3412;   
+  --color-surface-hover: #fff7ed;
+  --color-background: #fffcf5;
+
+  --color-text-main: #451a03;
+  --color-text-muted: #9a3412;
+
+  --color-green: #10b981;
+  --color-green-light: #d1fae5;
+  --color-yellow: #f59e0b;
+  --color-yellow-light: #fef3c7;
+  --color-red: #ef4444;
+  --color-red-light: #fee2e2;
+
   --color-border: #fde68a;
   --gradient-hero: linear-gradient(135deg, #f97316 0%, #fbbf24 100%);
   --gradient-card: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
-  --shadow-glow: 0 0 25px rgba(234, 88, 12, 0.25);
+  --shadow-sm: 0 2px 8px rgba(234, 88, 12, 0.08);
+  --shadow-md: 0 6px 24px rgba(234, 88, 12, 0.12);
+  --shadow-lg: 0 16px 48px rgba(234, 88, 12, 0.18);
+  --shadow-glow: 0 0 30px rgba(234, 88, 12, 0.3);
 }
 
 /* ========================================== */
@@ -130,11 +163,11 @@ html, body {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  max-width: 520px;   /* Optimal mobile screen width */
+  max-width: 520px;
   margin: 0 auto;
   position: relative;
   background-color: var(--color-background);
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.4);
 }
 
 /* ========================================== */
@@ -159,7 +192,7 @@ button {
   user-select: none;
 }
 
-/* Glassmorphic Modern Card */
+/* Modern card */
 .card {
   background: var(--color-surface);
   border-radius: var(--border-radius-lg);
@@ -176,12 +209,12 @@ button {
 
 /* Glass Card Variation */
 .card-glass {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--border-radius-lg);
   padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow: var(--shadow-md);
 }
 
@@ -208,8 +241,8 @@ button {
 }
 
 .btn-secondary {
-  background-color: var(--color-surface);
-  color: var(--color-primary-dark);
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-main);
   border: 1.5px solid var(--color-border);
   padding: 0.875rem 1.5rem;
   border-radius: var(--border-radius);
@@ -225,7 +258,7 @@ button {
 }
 
 .btn-secondary:hover, .btn-secondary:active {
-  background-color: var(--color-surface-hover);
+  background-color: var(--color-surface);
   border-color: var(--color-primary-light);
   transform: translateY(-1px);
 }
@@ -235,7 +268,7 @@ button {
   padding: 0.875rem 1.125rem;
   border-radius: var(--border-radius);
   border: 1.5px solid var(--color-border);
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-hover);
   color: var(--color-text-main);
   font-family: inherit;
   font-size: 0.95rem;
@@ -245,13 +278,14 @@ button {
 
 .input-field:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px var(--color-primary-light);
+  box-shadow: 0 0 0 4px var(--color-primary-light)22;
+  background-color: var(--color-surface);
 }
 
 .page-container {
   flex: 1;
   padding: 1.25rem;
-  padding-bottom: 6.5rem; /* Space for floating bottom nav */
+  padding-bottom: 6.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
