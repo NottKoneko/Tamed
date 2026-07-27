@@ -377,27 +377,14 @@ export const Onboarding = () => {
             </span>
           </div>
 
-          {/* Your Generated Credentials Banner */}
+          {/* Info Banner */}
           <div style={{
-            padding: '1rem', borderRadius: 'var(--border-radius)',
-            backgroundColor: 'var(--color-surface-hover)', border: '1.5px solid var(--color-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            padding: '0.875rem', borderRadius: 'var(--border-radius)',
+            backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)'
           }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Your Username & Pair Code
-              </div>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-text-main)', marginTop: '0.15rem' }}>
-                {createdProfile.username} <span style={{ opacity: 0.6, fontSize: '0.8rem' }}>({createdProfile.uid})</span>
-              </div>
-            </div>
-            <div style={{
-              padding: '0.5rem 0.875rem', borderRadius: '12px',
-              backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary-dark)',
-              fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.15em', fontFamily: 'monospace'
-            }}>
-              {createdProfile.pair_code || '849201'}
-            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.45 }}>
+              Enter your partner's <b>Full Username</b> and <b>6-digit Pair Code</b> to link your accounts. Or log in and pair up later!
+            </p>
           </div>
 
           {/* Partner Credential Inputs */}
