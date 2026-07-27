@@ -69,9 +69,9 @@ export const applyCustomTheme = (profile) => {
 
   const customPrimary = profile?.custom_theme_primary;
   const customAccent = profile?.custom_theme_accent;
-  const customMode = profile?.custom_theme_mode || 'dark';
+  const customMode = profile?.custom_theme_mode || 'light';
 
-  const modeConfig = THEME_MODES[customMode] || THEME_MODES.dark;
+  const modeConfig = THEME_MODES[customMode] || THEME_MODES.light;
   const isDarkMode = customMode === 'dark' || customMode === 'dark2';
 
   // Determine primary & accent color fallbacks based on species

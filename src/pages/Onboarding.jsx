@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { mockBackend } from '../services/mockBackend';
-import { Heart, Sparkles, Shield, Key, Link, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { 
+  Heart, Sparkles, Shield, Key, Link, ArrowRight, CheckCircle2, 
+  Crown, Flame, Copy, Check, ChevronLeft, Globe, User, Zap, Award
+} from 'lucide-react';
 
 const tryGetTimezone = () => {
   try {
@@ -25,7 +28,7 @@ export const TIMEZONE_OPTIONS = [
 
 export const Onboarding = () => {
   const [role, setRole] = useState(null); // 'owner' | 'pet'
-  const [step, setStep] = useState(1); // 1: role, 2: profile details, 3: account pairing
+  const [step, setStep] = useState(1); // 1: role, 2: profile, 3: pairing
   const [username, setUsername] = useState('');
   const [timezone, setTimezone] = useState(tryGetTimezone());
   
@@ -41,11 +44,12 @@ export const Onboarding = () => {
   const [createdProfile, setCreatedProfile] = useState(null);
   const [partnerUserCode, setPartnerUserCode] = useState('');
   const [partnerPairCode, setPartnerPairCode] = useState('');
+  const [copiedCode, setCopiedCode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const { setUser, pairWithCode, showToast } = useAppStore();
 
-  /* Proceed from Step 2 to Step 3 (Creates profile locally) */
+  /* Proceed from Step 2 to Step 3 (Creates profile) */
   const handleProceedToPairing = async () => {
     if (!username.trim()) return;
     setLoading(true);
@@ -67,7 +71,7 @@ export const Onboarding = () => {
       profile.timezone = timezone;
       setCreatedProfile(profile);
 
-      // Pre-fill partner test credentials if applicable
+      // Pre-fill test credentials helper for easy pairing
       if (role === 'pet') {
         setPartnerUserCode('Master Alex');
         setPartnerPairCode('849201');
@@ -92,7 +96,7 @@ export const Onboarding = () => {
       await setUser(createdProfile);
       await pairWithCode(partnerUserCode.trim(), partnerPairCode.trim());
     } catch (err) {
-      // Error toast already displayed by store
+      // Toast handled by store
     } finally {
       setLoading(false);
     }
@@ -104,12 +108,19 @@ export const Onboarding = () => {
     setLoading(true);
     try {
       await setUser(createdProfile);
-      showToast('Setup complete! You can pair accounts anytime in Settings ⚙️', 'info');
+      showToast('Welcome to Tamed! You can pair accounts anytime in Settings ⚙️', 'info');
     } catch (err) {
       showToast(err.message || 'Failed to finish setup', 'warning');
     } finally {
       setLoading(false);
     }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCode(true);
+    showToast('Pair Code copied to clipboard! 📋', 'success');
+    setTimeout(() => setCopiedCode(false), 2500);
   };
 
   const themePalettes = [
@@ -121,80 +132,159 @@ export const Onboarding = () => {
   ];
 
   const speciesOptions = [
-    { id: 'puppy', label: 'Puppy 🐶', desc: 'Pastel pinks & paw prints' },
-    { id: 'kitty', label: 'Kitty 🐱', desc: 'Soft blues & lilac whiskers' },
-    { id: 'fox', label: 'Fox 🦊', desc: 'Warm autumn ambers' },
-    { id: 'custom', label: 'Custom ⚙️', desc: 'Clean neutral slate baseline' }
+    { id: 'puppy', label: 'Puppy 🐶', desc: 'Pinks, soft paws & praise' },
+    { id: 'kitty', label: 'Kitty 🐱', desc: 'Lilacs, soft blue whiskers' },
+    { id: 'fox', label: 'Fox 🦊', desc: 'Burnt amber, autumn tones' },
+    { id: 'custom', label: 'Custom ⚙️', desc: 'Your own custom persona' }
+  ];
+
+  const praisePresets = [
+    'Good girl!',
+    'Good boy!',
+    'Cute puppy!',
+    'My little kitten!',
+    'Good pet!',
+    'Good submissive!'
   ];
 
   return (
-    <div className="page-container" style={{ justifyContent: 'center', minHeight: '100vh', paddingBottom: '2rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+    <div className="page-container" style={{ justifyContent: 'center', minHeight: '100vh', padding: '1.5rem 1.25rem 3rem' }}>
+      
+      {/* Top Brand Header */}
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
         <div style={{
           display: 'inline-flex',
-          padding: '0.875rem',
+          padding: '1rem',
           borderRadius: '50%',
-          backgroundColor: 'var(--color-primary-light)',
-          color: 'var(--color-primary-dark)',
+          backgroundImage: 'var(--gradient-hero)',
+          color: '#ffffff',
+          boxShadow: 'var(--shadow-glow)',
           marginBottom: '0.75rem'
         }}>
-          <Heart size={36} />
+          <Heart size={36} fill="#ffffff" />
         </div>
-        <h1 style={{ fontSize: '2rem', color: 'var(--color-primary-dark)' }}>Tamed</h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-          Gamified behavior-tracking & reward system for couples
+        <h1 style={{ fontSize: '2.25rem', letterSpacing: '-0.03em', background: 'var(--gradient-hero)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          Tamed
+        </h1>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '0.25rem', fontWeight: 500 }}>
+          Relationship codex & reward system for couples
         </p>
+
+        {/* Stepper Progress Dots */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.25rem' }}>
+          {[
+            { num: 1, label: 'Role' },
+            { num: 2, label: 'Profile' },
+            { num: 3, label: 'Pairing' }
+          ].map((st, idx) => {
+            const isActive = step === st.num;
+            const isDone = step > st.num;
+            return (
+              <React.Fragment key={st.num}>
+                {idx > 0 && (
+                  <div style={{
+                    height: '2px', width: '24px',
+                    backgroundColor: isDone ? 'var(--color-primary)' : 'var(--color-border)',
+                    transition: 'all 0.3s ease'
+                  }} />
+                )}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.35rem',
+                  padding: '0.3rem 0.75rem', borderRadius: 'var(--border-radius-full)',
+                  backgroundColor: isActive ? 'var(--color-primary)' : isDone ? 'var(--color-primary-light)' : 'var(--color-surface-hover)',
+                  color: isActive ? '#ffffff' : isDone ? 'var(--color-primary-dark)' : 'var(--color-text-muted)',
+                  fontSize: '0.75rem', fontWeight: 700,
+                  transition: 'all 0.3s ease'
+                }}>
+                  {isDone ? <CheckCircle2 size={13} /> : st.num}
+                  <span>{st.label}</span>
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── STEP 1: ROLE SELECTION ────────────────────────────── */}
       {step === 1 && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <h2 style={{ fontSize: '1.25rem', textAlign: 'center' }}>Choose Your Role</h2>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.35rem' }}>Select Your Role</h2>
+            <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+              You can switch roles anytime using the quick switch bar
+            </p>
+          </div>
 
+          {/* Owner Role Card */}
           <button
             onClick={() => { setRole('owner'); setStep(2); }}
             className="card"
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
+              alignItems: 'flex-start',
+              gap: '1.125rem',
               textAlign: 'left',
               cursor: 'pointer',
-              border: '2px solid var(--color-border)',
-              transition: 'all 0.2s ease'
+              border: role === 'owner' ? '2px solid var(--color-primary)' : '1.5px solid var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              transition: 'all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1)',
+              padding: '1.25rem'
             }}
           >
-            <div style={{ padding: '0.75rem', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)' }}>
-              <Shield size={28} color="var(--color-primary)" />
+            <div style={{
+              padding: '0.85rem', borderRadius: '16px',
+              backgroundColor: 'var(--color-primary-light)',
+              color: 'var(--color-primary-dark)',
+              flexShrink: 0
+            }}>
+              <Shield size={30} />
             </div>
-            <div>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>Owner / Master</h3>
-              <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
-                Set behavior tasks, approve reward requests, and manage point balances.
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '1.15rem', color: 'var(--color-text-main)' }}>Owner / Master 👑</h3>
+                <span className="badge" style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary-dark)' }}>
+                  Leader
+                </span>
+              </div>
+              <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', marginTop: '0.35rem', lineHeight: 1.45 }}>
+                Assign daily behavior tasks, set reward values, approve treat requests, and manage point balances.
               </p>
             </div>
           </button>
 
+          {/* Pet Role Card */}
           <button
             onClick={() => { setRole('pet'); setStep(2); }}
             className="card"
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
+              alignItems: 'flex-start',
+              gap: '1.125rem',
               textAlign: 'left',
               cursor: 'pointer',
-              border: '2px solid var(--color-border)',
-              transition: 'all 0.2s ease'
+              border: role === 'pet' ? '2px solid var(--color-accent)' : '1.5px solid var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              transition: 'all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1)',
+              padding: '1.25rem'
             }}
           >
-            <div style={{ padding: '0.75rem', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)' }}>
-              <Sparkles size={28} color="var(--color-accent)" />
+            <div style={{
+              padding: '0.85rem', borderRadius: '16px',
+              backgroundColor: '#fce7f3',
+              color: '#db2777',
+              flexShrink: 0
+            }}>
+              <Sparkles size={30} />
             </div>
-            <div>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>Pet / Submissive</h3>
-              <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
-                Complete daily tasks, earn reward points, and request cute treats or favors!
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '1.15rem', color: 'var(--color-text-main)' }}>Pet / Submissive 🐾</h3>
+                <span className="badge" style={{ backgroundColor: '#fce7f3', color: '#db2777' }}>
+                  Reward Earner
+                </span>
+              </div>
+              <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', marginTop: '0.35rem', lineHeight: 1.45 }}>
+                Check off daily tasks, collect reward points, propose new treat ideas, and earn sweet praise!
               </p>
             </div>
           </button>
@@ -203,24 +293,34 @@ export const Onboarding = () => {
 
       {/* ── STEP 2: PROFILE DETAILS (OWNER) ───────────────────── */}
       {step === 2 && role === 'owner' && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h2 style={{ fontSize: '1.25rem' }}>Owner Profile Setup</h2>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ padding: '0.6rem', borderRadius: '12px', backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary-dark)' }}>
+              <Crown size={22} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.25rem' }}>Owner Profile Setup</h2>
+              <p style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)' }}>Configure your title and timezone</p>
+            </div>
+          </div>
+
           <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
-              Your Username / Title
+            <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--color-text-main)' }}>
+              Your Title / Username
             </label>
             <input
               type="text"
               className="input-field"
-              placeholder="e.g. Master Alex"
+              placeholder="e.g. Master Alex / Sir"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              autoFocus
             />
           </div>
 
           <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
-              Timezone
+            <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--color-text-main)' }}>
+              Primary Timezone
             </label>
             <select
               className="input-field"
@@ -232,13 +332,16 @@ export const Onboarding = () => {
                 <option key={tz} value={tz}>{tz}</option>
               ))}
             </select>
+            <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '0.35rem', display: 'block' }}>
+              Used to automatically refresh daily task statuses at midnight.
+            </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <button type="button" className="btn-secondary" onClick={() => { setRole(null); setStep(1); }}>
-              Back
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button type="button" className="btn-secondary" onClick={() => { setRole(null); setStep(1); }} style={{ flex: 1 }}>
+              <ChevronLeft size={18} /> Back
             </button>
-            <button type="button" className="btn-primary" onClick={handleProceedToPairing} disabled={!username.trim() || loading}>
+            <button type="button" className="btn-primary" onClick={handleProceedToPairing} disabled={!username.trim() || loading} style={{ flex: 2 }}>
               Next: Account Pairing <ArrowRight size={18} />
             </button>
           </div>
@@ -247,10 +350,19 @@ export const Onboarding = () => {
 
       {/* ── STEP 2: PROFILE DETAILS (PET) ─────────────────────── */}
       {step === 2 && role === 'pet' && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h2 style={{ fontSize: '1.25rem' }}>Pet Profile Setup</h2>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ padding: '0.6rem', borderRadius: '12px', backgroundColor: '#fce7f3', color: '#db2777' }}>
+              <Sparkles size={22} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.25rem' }}>Pet Profile Setup</h2>
+              <p style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)' }}>Customize your pet name & persona</p>
+            </div>
+          </div>
+
           <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--color-text-main)' }}>
               Your Pet Name
             </label>
             <input
@@ -259,61 +371,70 @@ export const Onboarding = () => {
               placeholder="e.g. Little Fox / Kitten"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              autoFocus
             />
           </div>
 
           <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
-              Pet Persona & Species
+            <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--color-text-main)' }}>
+              Pet Persona & Theme Preset
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              {speciesOptions.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setSpecies(opt.id)}
-                  style={{
-                    padding: '0.65rem',
-                    borderRadius: 'var(--border-radius)',
-                    border: species === opt.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    backgroundColor: species === opt.id ? 'var(--color-surface-hover)' : 'transparent',
-                    textAlign: 'left',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{opt.label}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{opt.desc}</div>
-                </button>
-              ))}
+              {speciesOptions.map((opt) => {
+                const isSel = species === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setSpecies(opt.id)}
+                    style={{
+                      padding: '0.75rem',
+                      borderRadius: 'var(--border-radius)',
+                      border: isSel ? '2px solid var(--color-primary)' : '1.5px solid var(--color-border)',
+                      backgroundColor: isSel ? 'var(--color-primary-light)' : 'var(--color-surface)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: '0.875rem', color: isSel ? 'var(--color-primary-dark)' : 'var(--color-text-main)' }}>
+                      {opt.label}
+                    </div>
+                    <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                      {opt.desc}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Custom Species Inputs */}
+          {/* Custom Species Options */}
           {species === 'custom' && (
-            <div style={{ padding: '0.875rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-surface-hover)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ padding: '1rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '0.5rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Emoji</label>
-                  <input type="text" className="input-field" value={customSpeciesIcon} onChange={(e) => setCustomSpeciesIcon(e.target.value)} style={{ textAlign: 'center', fontSize: '1.1rem' }} />
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>Emoji</label>
+                  <input type="text" className="input-field" value={customSpeciesIcon} onChange={(e) => setCustomSpeciesIcon(e.target.value)} style={{ textAlign: 'center', fontSize: '1.25rem', padding: '0.5rem' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Species Name</label>
-                  <input type="text" className="input-field" placeholder="Bunny" value={customSpeciesName} onChange={(e) => setCustomSpeciesName(e.target.value)} />
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>Species Name</label>
+                  <input type="text" className="input-field" placeholder="Bunny" value={customSpeciesName} onChange={(e) => setCustomSpeciesName(e.target.value)} style={{ padding: '0.5rem 0.75rem' }} />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Preset Color Palette</label>
-                <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, display: 'block', marginBottom: '0.35rem' }}>Preset Color Palette</label>
+                <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
                   {themePalettes.map((p) => (
                     <button
                       key={p.label}
                       type="button"
                       onClick={() => { setPrimaryColor(p.primary); setAccentColor(p.accent); }}
                       style={{
-                        padding: '0.35rem 0.6rem', borderRadius: '20px', border: '1px solid var(--color-border)',
+                        padding: '0.35rem 0.65rem', borderRadius: '20px', border: '1.5px solid var(--color-border)',
                         background: `linear-gradient(135deg, ${p.primary} 0%, ${p.accent} 100%)`,
-                        color: '#fff', fontSize: '0.65rem', fontWeight: 700, flexShrink: 0
+                        color: '#fff', fontSize: '0.675rem', fontWeight: 700, flexShrink: 0
                       }}
                     >
                       {p.label}
@@ -325,8 +446,8 @@ export const Onboarding = () => {
           )}
 
           <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
-              Custom Praise Term
+            <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--color-text-main)' }}>
+              Default Praise Term
             </label>
             <input
               type="text"
@@ -334,12 +455,31 @@ export const Onboarding = () => {
               placeholder="e.g. Good girl! / Good boy!"
               value={praiseTerms}
               onChange={(e) => setPraiseTerms(e.target.value)}
+              style={{ marginBottom: '0.4rem' }}
             />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+              {praisePresets.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  onClick={() => setPraiseTerms(term)}
+                  style={{
+                    padding: '0.25rem 0.6rem', borderRadius: '14px',
+                    fontSize: '0.7rem', fontWeight: 600,
+                    backgroundColor: praiseTerms === term ? 'var(--color-primary-light)' : 'var(--color-surface-hover)',
+                    color: praiseTerms === term ? 'var(--color-primary-dark)' : 'var(--color-text-muted)',
+                    border: '1px solid var(--color-border)'
+                  }}
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
-              Timezone
+            <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.4rem', color: 'var(--color-text-main)' }}>
+              Primary Timezone
             </label>
             <select
               className="input-field"
@@ -353,11 +493,11 @@ export const Onboarding = () => {
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <button type="button" className="btn-secondary" onClick={() => { setRole(null); setStep(1); }}>
-              Back
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button type="button" className="btn-secondary" onClick={() => { setRole(null); setStep(1); }} style={{ flex: 1 }}>
+              <ChevronLeft size={18} /> Back
             </button>
-            <button type="button" className="btn-primary" onClick={handleProceedToPairing} disabled={!username.trim() || loading}>
+            <button type="button" className="btn-primary" onClick={handleProceedToPairing} disabled={!username.trim() || loading} style={{ flex: 2 }}>
               Next: Account Pairing <ArrowRight size={18} />
             </button>
           </div>
@@ -448,13 +588,14 @@ export const Onboarding = () => {
             <button
               type="button"
               onClick={() => setStep(2)}
-              style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textDecoration: 'underline', marginTop: '0.25rem', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'center', marginTop: '0.25rem' }}
             >
-              Back to Profile Setup
+              ← Back to profile setup
             </button>
           </div>
         </div>
       )}
+
     </div>
   );
 };

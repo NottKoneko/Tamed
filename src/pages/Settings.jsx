@@ -108,7 +108,7 @@ export const Settings = () => {
   /* Theme state */
   const [pagePrimary, setPagePrimary] = useState(user?.custom_theme_primary || '#8b5cf6');
   const [pageAccent, setPageAccent] = useState(user?.custom_theme_accent || '#ec4899');
-  const [pageThemeMode, setPageThemeMode] = useState(user?.custom_theme_mode || 'dark');
+  const [pageThemeMode, setPageThemeMode] = useState(user?.custom_theme_mode || 'light');
 
   /* Owner point values & rules */
   const [greenPoints, setGreenPoints] = useState(pairing?.point_value_green ?? 1);
