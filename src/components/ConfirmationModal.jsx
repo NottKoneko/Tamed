@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X, Check } from 'lucide-react';
 
 export const ConfirmationModal = ({ 
@@ -13,6 +14,18 @@ export const ConfirmationModal = ({
 }) => {
   const [typedInput, setTypedInput] = useState('');
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const isConfirmed = requiredWord 
@@ -26,33 +39,44 @@ export const ConfirmationModal = ({
     setTypedInput('');
   };
 
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100vw',
-      height: '100dvh',
-      zIndex: 99999,
-      backgroundColor: 'rgba(0, 0, 0, 0.75)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1.25rem'
-    }}>
-      <div className="card" style={{
-        maxWidth: '420px',
-        width: '100%',
-        margin: 'auto',
-        position: 'relative',
-        padding: '1.5rem',
-        border: danger ? '2px solid var(--color-red)' : '2px solid var(--color-primary)',
-        boxShadow: 'var(--shadow-lg)'
-      }}>
+  const modalContent = (
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100dvh',
+        zIndex: 999999,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.25rem',
+        boxSizing: 'border-box'
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="card" 
+        style={{
+          maxWidth: '420px',
+          width: '100%',
+          margin: 'auto',
+          position: 'relative',
+          padding: '1.5rem',
+          border: danger ? '2px solid var(--color-red)' : '2px solid var(--color-primary)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          animation: 'popIn 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) forwards'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
@@ -116,4 +140,6 @@ export const ConfirmationModal = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
