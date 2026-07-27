@@ -28,8 +28,10 @@ export const MascotAvatar = ({ profile, isEditable = false }) => {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: '0.75rem',
-      padding: '0.5rem'
+      padding: '0.25rem',
+      flexShrink: 0
     }}>
       {/* Avatar Ring Frame */}
       <div style={{
@@ -40,30 +42,41 @@ export const MascotAvatar = ({ profile, isEditable = false }) => {
         padding: '4px',
         boxShadow: 'var(--shadow-glow)',
         position: 'relative',
-        animation: 'float 3s ease-in-out infinite'
+        animation: 'float 3s ease-in-out infinite',
+        flexShrink: 0
       }}>
         <div style={{
           width: '100%',
           height: '100%',
           backgroundColor: 'var(--color-surface)',
           borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justify: 'center',
+          display: 'grid',
+          placeItems: 'center',
+          textAlign: 'center',
           fontSize: '2.75rem',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
+          lineHeight: 1,
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)',
+          userSelect: 'none'
         }}>
-          {species === 'custom' ? (profile?.custom_species_icon || '✨') : (speciesIcons[species] || '✨')}
+          <span style={{ display: 'inline-block', transform: 'translateY(1px)' }}>
+            {species === 'custom' ? (profile?.custom_species_icon || '✨') : (speciesIcons[species] || '✨')}
+          </span>
         </div>
         <span style={{
           position: 'absolute',
-          bottom: '-2px',
-          right: '-2px',
-          fontSize: '1.25rem',
+          bottom: '0px',
+          right: '0px',
+          width: '30px',
+          height: '30px',
           backgroundColor: 'var(--color-surface)',
           borderRadius: '50%',
-          padding: '2px',
-          boxShadow: 'var(--shadow-sm)'
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: '1.1rem',
+          lineHeight: 1,
+          boxShadow: 'var(--shadow-sm)',
+          border: '1.5px solid var(--color-border)',
+          userSelect: 'none'
         }}>
           {moods.find(m => m.label === mood)?.icon || '😊'}
         </span>

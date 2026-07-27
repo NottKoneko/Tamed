@@ -101,7 +101,7 @@ export const Home = () => {
             </p>
 
             <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(4px)' }}>
+              <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: 'white', backdropFilter: 'blur(4px)' }}>
                 Mood: {petProfile?.mood || 'Happy'}
               </span>
               {pairing?.weekend_multiplier > 1.0 && (
@@ -112,8 +112,58 @@ export const Home = () => {
             </div>
           </div>
 
-          <MascotAvatar profile={petProfile} isEditable={!isOwner} />
+          <MascotAvatar profile={petProfile} isEditable={false} />
         </div>
+
+        {/* Interactive Mood Selector Bar for Pet */}
+        {user?.role === 'pet' && (
+          <div style={{
+            marginTop: '1.125rem',
+            paddingTop: '0.85rem',
+            borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            overflowX: 'auto',
+            paddingBottom: '0.25rem',
+            scrollbarWidth: 'none'
+          }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0, marginRight: '0.2rem' }}>
+              Set Mood:
+            </span>
+            {[
+              { label: 'Happy', icon: '😊' },
+              { label: 'Pampered', icon: '👑' },
+              { label: 'Sleepy', icon: '😴' },
+              { label: 'Proud', icon: '🌟' },
+              { label: 'Playful', icon: '🎾' }
+            ].map((m) => {
+              const isSelected = (petProfile?.mood || 'Happy') === m.label;
+              return (
+                <button
+                  key={m.label}
+                  type="button"
+                  onClick={() => updatePetMood(m.label)}
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: 'var(--border-radius-full)',
+                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.2)',
+                    color: isSelected ? 'var(--color-primary-dark)' : 'white',
+                    fontWeight: isSelected ? 800 : 600,
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+                  }}
+                >
+                  {m.icon} {m.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Level & XP Progress Bar */}

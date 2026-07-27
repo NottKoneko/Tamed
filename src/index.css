@@ -229,7 +229,7 @@ button {
 .page-container {
   flex: 1;
   padding: 1.25rem;
-  padding-bottom: 6.5rem;
+  padding-bottom: 8.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
