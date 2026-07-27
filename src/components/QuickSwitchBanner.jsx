@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { isSupabaseConfigured } from '../services/supabaseClient';
 import { UserCheck, Repeat, Shield, Sparkles } from 'lucide-react';
 
 export const QuickSwitchBanner = () => {
   const { user, quickSwitchRole } = useAppStore();
 
-  if (!user) return null;
+  // Hide demo testing banner in production Supabase mode
+  if (isSupabaseConfigured || !user) return null;
 
   const isOwner = user.role === 'owner';
 

@@ -72,15 +72,6 @@ export const Onboarding = () => {
       const profile = await createInitialProfile(profileDetails);
       setCreatedProfile(profile);
 
-      // Pre-fill test credentials helper if applicable
-      if (role === 'pet') {
-        setPartnerUserCode('Master Alex');
-        setPartnerPairCode('849201');
-      } else {
-        setPartnerUserCode('Little Fox');
-        setPartnerPairCode('567812');
-      }
-
       setStep(3);
     } catch (err) {
       showToast(err.message || 'Profile setup failed', 'warning');

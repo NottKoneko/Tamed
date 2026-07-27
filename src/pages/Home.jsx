@@ -121,6 +121,25 @@ export const Home = () => {
         <XPProgressBar xp={xp} level={level} />
       )}
 
+      {/* Unpaired Notice Banner */}
+      {!pairing && (
+        <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', backgroundColor: 'var(--color-surface-hover)', border: '1.5px solid var(--color-primary-light)' }}>
+          <div>
+            <h3 style={{ fontSize: '1rem', color: 'var(--color-primary-dark)' }}>Pairing Pending 🔗</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+              Link accounts with your partner using their Username & 6-digit Pair Code.
+            </p>
+          </div>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className="btn-primary"
+            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+          >
+            Pair Now ➔
+          </button>
+        </div>
+      )}
+
       {/* Gamification Stats Summary Grid (Species Currency Wrapper) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1.125rem' }}>
