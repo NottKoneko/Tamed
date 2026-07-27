@@ -1,52 +1,58 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from './services/supabaseClient';
 import { useAppStore } from './store/useAppStore';
-import { Onboarding } from './pages/Onboarding';
-import { Home } from './pages/Home';
-import { DashboardPet } from './pages/DashboardPet';
-import { DashboardOwner } from './pages/DashboardOwner';
-import { Rewards } from './pages/Rewards';
-import { Settings } from './pages/Settings';
-import { BottomNav } from './components/BottomNav';
-import { Toast } from './components/Toast';
-import { QuickSwitchBanner } from './components/QuickSwitchBanner';
-import { PraiseCardModal } from './components/PraiseCardModal';
+import AuthScreen from './pages/AuthScreen';
+import Onboarding from './pages/Onboarding';
+import Home from './pages/Home'; // Your existing main dashboard/app wrapper
 
-export function App() {
-  const { user, activeTab, activePraiseModal, setActivePraiseModal } = useAppStore();
+export default function App() {
+  const setSession = useAppStore((state) => state.setSession);
+  const loadInitialData = useAppStore((state) => state.loadInitialData);
+  const session = useAppStore((state) => state.session);
+  const profile = useAppStore((state) => state.profile);
+  const isLoading = useAppStore((state) => state.isLoading);
+  
+  const [authInitialized, setAuthInitialized] = useState(false);
 
-  if (!user) {
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthInitialized(true);
+    });
+
+    // Listen for auth changes dynamically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setSession]);
+
+  useEffect(() => {
+    if (session) {
+      loadInitialData();
+    }
+  }, [session, loadInitialData]);
+
+  if (!authInitialized || (session && isLoading)) {
     return (
-      <>
-        <Toast />
-        <Onboarding />
-      </>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400">
+        Loading Tamed...
+      </div>
     );
   }
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'home':
-        return <Home />;
-      case 'schedule':
-        return user.role === 'owner' ? <DashboardOwner /> : <DashboardPet />;
-      case 'rewards':
-        return <Rewards />;
-      case 'settings':
-        return <Settings />;
-      default:
-        return <Home />;
-    }
-  };
+  // 1. Not signed in? Show the Auth Screen
+  if (!session) {
+    return <AuthScreen />;
+  }
 
-  return (
-    <div style={{ position: 'relative', minHeight: '100dvh' }}>
-      <QuickSwitchBanner />
-      <Toast />
-      <PraiseCardModal note={activePraiseModal} onClose={() => setActivePraiseModal(null)} />
-      {renderTabContent()}
-      <BottomNav />
-    </div>
-  );
+  // 2. Signed in but hasn't created a pet/owner profile? Show Onboarding
+  if (!profile) {
+    return <Onboarding />;
+  }
+
+  // 3. Fully signed in and configured? Load the app shell
+  return <Home />;
 }
-
-export default App;

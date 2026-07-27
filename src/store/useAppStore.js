@@ -1,586 +1,169 @@
 import { create } from 'zustand';
-import { mockBackend } from '../services/mockBackend';
-import { playSound, setSoundEnabled, isSoundEnabled } from '../utils/audio';
-import { triggerConfetti } from '../utils/confetti';
-import { applyCustomTheme } from '../utils/theme';
+import { supabase, supabaseBackend } from '../services/supabaseClient';
 
 export const useAppStore = create((set, get) => ({
-  user: null, 
-  pairing: null, 
+  session: null,
+  userId: null,
+  profile: null,
+  pairing: null,
   partnerProfile: null,
-  calendarEntries: [], 
-  proposals: [],     
-  rewardItems: [],   
-  redemptions: [],   
-  dailyTasks: [],
+  
+  // Data
+  calendar: [],
+  tasks: [],
+  proposals: [],
+  storeItems: [],
+  redemptions: [],
   praiseNotes: [],
-  activePraiseModal: null,
-  soundEnabled: true,
-  activeTab: 'home', 
-  toast: null,
-  unsubscribeRealtime: null,
+  
+  isLoading: true,
+  realtimeChannel: null,
+  
+  setSession: (session) => set({ session, userId: session?.user?.id }),
 
-  toggleSound: () => {
-    const next = !get().soundEnabled;
-    set({ soundEnabled: next });
-    setSoundEnabled(next);
-    get().showToast(next ? 'Sound effects enabled 🔔' : 'Sound effects muted 🔕', 'info');
-  },
-
-  showToast: (message, type = 'info') => {
-    set({ toast: { message, type } });
-    setTimeout(() => {
-      set({ toast: null });
-    }, 3500);
-  },
-
-  setActiveTab: (tab) => {
-    playSound('click');
-    set({ activeTab: tab });
-  },
-
-  setActivePraiseModal: (note) => set({ activePraiseModal: note }),
-
-  setUser: (user) => {
-    set({ user });
-    if (user) {
-      applyCustomTheme(user);
-      get().loadPairingData();
-      get().setupRealtime();
-    } else {
-      const unsub = get().unsubscribeRealtime;
-      if (unsub) unsub();
-      set({ pairing: null, partnerProfile: null, calendarEntries: [], proposals: [], rewardItems: [], redemptions: [], dailyTasks: [], praiseNotes: [] });
+  loadInitialData: async () => {
+    const { userId } = get();
+    if (!userId) {
+      set({ isLoading: false });
+      return;
     }
-  },
-
-  quickSwitchRole: async () => {
-    playSound('click');
-    const { user } = get();
-    const targetRole = user?.role === 'owner' ? 'pet' : 'owner';
     
-    if (targetRole === 'pet') {
-      const pet = await mockBackend.loginPet('Little Fox', 'fox', 'Good fox!');
-      await get().setUser(pet);
-    } else {
-      const owner = await mockBackend.loginOwner('Master Alex');
-      await get().setUser(owner);
-    }
-    get().showToast(`Switched view to ${targetRole.toUpperCase()}`, 'info');
-  },
-
-  loadPairingData: async () => {
-    const { user } = get();
-    if (!user) return;
-
     try {
-      const pairing = await mockBackend.getPairingForUser(user.id);
-      set({ pairing });
-
-      if (pairing) {
-        const partnerId = user.role === 'owner' ? pairing.pet_id : pairing.owner_id;
-        const partnerProfile = await mockBackend.getProfile(partnerId);
-        
-        const species = user.role === 'pet' ? user.pet_species : (partnerProfile?.pet_species || 'puppy');
-        document.documentElement.setAttribute('data-theme', species || 'puppy');
-
-        const [calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes] = await Promise.all([
-          mockBackend.getCalendarEntries(pairing.id),
-          mockBackend.getProposals(pairing.id),
-          mockBackend.getRewardItems(pairing.id),
-          mockBackend.getRedemptions(pairing.id),
-          mockBackend.getDailyTasks(pairing.id),
-          mockBackend.getPraiseNotes(pairing.id)
-        ]);
-
-        set({ partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes });
-      }
-    } catch (err) {
-      console.error('Error loading pairing data:', err);
-    }
-  },
-
-  setupRealtime: () => {
-    const prevUnsub = get().unsubscribeRealtime;
-    if (prevUnsub) prevUnsub();
-
-    const unsub = mockBackend.subscribe(({ event, payload }) => {
-      const { user, pairing, showToast } = get();
-      if (!user) return;
-
-      if (event === 'PROFILE_UPDATED') {
-        if (payload.id === user.id) {
-          if (payload.leveledUp) {
-            playSound('levelUp');
-            triggerConfetti();
-            showToast(`LEVEL UP! You reached Level ${payload.level}! 🎉`, 'success');
-          }
-          set({ user: { ...user, ...payload } });
-          if (payload.pet_species) {
-            document.documentElement.setAttribute('data-theme', payload.pet_species);
-          }
-        } else if (get().partnerProfile && payload.id === get().partnerProfile.id) {
-          set({ partnerProfile: { ...get().partnerProfile, ...payload } });
+      set({ isLoading: true });
+      const profile = await supabaseBackend.getProfile(userId);
+      set({ profile });
+      
+      if (profile) {
+        const pairing = await supabaseBackend.getPairing(userId);
+        if (pairing) {
+          set({ pairing });
+          const partnerId = profile.role === 'owner' ? pairing.pet_id : pairing.owner_id;
+          const partnerProfile = await supabaseBackend.getProfile(partnerId);
+          set({ partnerProfile });
+          
+          // Load app data concurrently
+          const [calendar, tasks, proposals, storeItems, redemptions, praiseNotes] = await Promise.all([
+             supabaseBackend.getCalendarEntries(pairing.id),
+             supabaseBackend.getDailyTasks(pairing.id),
+             supabaseBackend.getProposals(pairing.id),
+             supabaseBackend.getRewardItems(pairing.id),
+             supabaseBackend.getRedemptions(pairing.id),
+             supabaseBackend.getPraiseNotes(pairing.id)
+          ]);
+          
+          set({ calendar, tasks, proposals, storeItems, redemptions, praiseNotes });
+          get().initRealtime(pairing.id);
         }
       }
-
-      if (event === 'PRAISE_NOTE_CREATED') {
-        if (pairing && payload.pairing_id === pairing.id) {
-          get().loadPairingData();
-          if (user.role === 'pet') {
-            playSound('praise');
-            triggerConfetti();
-            set({ activePraiseModal: payload });
-          }
-        }
-      }
-
-      if (event === 'DAILY_TASK_CREATED' || event === 'DAILY_TASK_UPDATED' || event === 'DAILY_TASK_DELETED') {
-        if (pairing) get().loadPairingData();
-      }
-
-      if (event === 'CALENDAR_UPDATED') {
-        if (pairing && payload.pairing_id === pairing.id) {
-          get().loadPairingData();
-          if (user.role === 'pet') {
-            playSound('praise');
-            if (payload.status === 'green') triggerConfetti();
-            showToast(`Owner updated schedule! Day marked as ${payload.status.toUpperCase()} 🌟`, 'info');
-          }
-        }
-      }
-
-      if (event === 'PROPOSAL_CREATED') {
-        if (pairing && payload.pairing_id === pairing.id) {
-          get().loadPairingData();
-          if (user.role === 'owner') {
-            playSound('click');
-            showToast(`New reward store proposal: "${payload.title}"`, 'info');
-          }
-        }
-      }
-
-      if (event === 'PROPOSAL_UPDATED') {
-        if (pairing && payload.pairing_id === pairing.id) {
-          get().loadPairingData();
-          if (user.role === 'pet') {
-            playSound('praise');
-            showToast(`Proposal "${payload.title}" was ${payload.status}!`, 'info');
-          }
-        }
-      }
-
-      if (event === 'REWARD_ITEM_CREATED' || event === 'REWARD_ITEM_DELETED') {
-        if (pairing) get().loadPairingData();
-      }
-
-      if (event === 'REDEMPTION_CREATED') {
-        if (pairing && payload.pairing_id === pairing.id) {
-          get().loadPairingData();
-          if (user.role === 'owner') {
-            playSound('click');
-            showToast(`Pet requested to redeem "${payload.title}" (${payload.points_spent} pts)! 🎁`, 'info');
-          }
-        }
-      }
-
-      if (event === 'REDEMPTION_UPDATED') {
-        if (pairing && payload.pairing_id === pairing.id) {
-          get().loadPairingData();
-          if (user.role === 'pet') {
-            if (payload.status === 'approved') {
-              playSound('levelUp');
-              triggerConfetti();
-            }
-            showToast(`Redemption for "${payload.title}" was ${payload.status}!`, 'info');
-          }
-        }
-      }
-    });
-
-    set({ unsubscribeRealtime: unsub });
-  },
-
-  // Pet Mood Update
-  updatePetMood: async (mood) => {
-    const { user, showToast } = get();
-    if (!user) return;
-    try {
-      const updated = await mockBackend.updateProfile(user.id, { mood });
-      set({ user: updated });
-      playSound('click');
-      showToast(`Mood set to "${mood}"!`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
+    } catch (error) {
+      console.error("Failed loading initial data:", error);
+    } finally {
+      set({ isLoading: false });
     }
   },
 
-  // Pairing Point Values Update (Owner)
-  updatePairingPointValues: async (pointValues) => {
-    const { pairing, showToast } = get();
+  createProfile: async (profileData) => {
+    const { userId } = get();
+    const newProfile = await supabaseBackend.createProfile({ ...profileData, id: userId });
+    set({ profile: newProfile });
+    return newProfile;
+  },
+
+  pairWithCode: async (username, code) => {
+    const { userId } = get();
+    await supabaseBackend.pairWithCode(userId, username, code);
+    await get().loadInitialData(); // Reload everything
+  },
+
+  initRealtime: (pairingId) => {
+    if (get().realtimeChannel) return;
+
+    const channel = supabase.channel(`tamed-${pairingId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_entries', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('calendar'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_tasks', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('tasks'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reward_proposals', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('proposals'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reward_items', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('storeItems'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('redemptions'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'praise_notes', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('praiseNotes'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+         const { profile, partnerProfile } = get();
+         if (payload.new.id === profile?.id) set({ profile: payload.new });
+         if (payload.new.id === partnerProfile?.id) set({ partnerProfile: payload.new });
+      })
+      .subscribe();
+      
+    set({ realtimeChannel: channel });
+  },
+
+  refreshData: async (type) => {
+    const { pairing } = get();
     if (!pairing) return;
     try {
-      const updatedPairing = await mockBackend.updatePairingPointValues(pairing.id, pointValues);
-      set({ pairing: updatedPairing });
-      playSound('click');
-      showToast('Color point values updated! (Does not affect past entries)', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
+      if (type === 'calendar') set({ calendar: await supabaseBackend.getCalendarEntries(pairing.id) });
+      if (type === 'tasks') set({ tasks: await supabaseBackend.getDailyTasks(pairing.id) });
+      if (type === 'proposals') set({ proposals: await supabaseBackend.getProposals(pairing.id) });
+      if (type === 'storeItems') set({ storeItems: await supabaseBackend.getRewardItems(pairing.id) });
+      if (type === 'redemptions') set({ redemptions: await supabaseBackend.getRedemptions(pairing.id) });
+      if (type === 'praiseNotes') set({ praiseNotes: await supabaseBackend.getPraiseNotes(pairing.id) });
+    } catch(e) {
+      console.error(`Failed to refresh ${type}`, e);
     }
   },
 
-  // Pairing Currency Customization (Owner)
-  updatePairingCurrency: async (currencyConfig) => {
-    const { pairing, showToast } = get();
-    if (!pairing) return;
-    try {
-      const updatedPairing = await mockBackend.updatePairingCurrency(pairing.id, currencyConfig);
-      set({ pairing: updatedPairing });
-      playSound('praise');
-      triggerConfetti();
-      showToast(`Point type updated to ${currencyConfig.icon || '⭐'} ${currencyConfig.name || 'Points'}!`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
+  // Action Methods
+  setCalendarEntry: async (date, status) => {
+    const { pairing } = get();
+    await supabaseBackend.setCalendarEntry(pairing.id, date, status);
+  },
+  
+  createDailyTask: async (taskData) => {
+    const { pairing } = get();
+    await supabaseBackend.createDailyTask({ ...taskData, pairing_id: pairing.id });
   },
 
-  // Behavior Codex (Daily Tasks)
-  createDailyTask: async (title) => {
-    const { pairing, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.createDailyTask(pairing.id, title);
-      await get().loadPairingData();
-      playSound('click');
-      showToast(`Added task "${title}"`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
+  toggleDailyTask: async (taskId, isCompleted) => await supabaseBackend.toggleDailyTask(taskId, isCompleted),
+  deleteDailyTask: async (taskId) => await supabaseBackend.deleteDailyTask(taskId),
+
+  createProposal: async (title, cost) => {
+    const { pairing, profile } = get();
+    await supabaseBackend.createProposal({ pairing_id: pairing.id, pet_id: profile.id, title, cost });
   },
 
-  evaluateAutoCalendarStatus: async () => {
-    const { dailyTasks, pairing } = get();
-    if (!pairing || !dailyTasks || dailyTasks.length === 0) return;
+  processProposal: async (proposalId, status) => await supabaseBackend.processProposal(proposalId, status),
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const total = dailyTasks.length;
-    const completed = dailyTasks.filter(t => t.is_completed).length;
-
-    let targetStatus = 'red';
-    if (completed === total) {
-      targetStatus = 'green';
-    } else if (completed > 0) {
-      targetStatus = 'yellow';
-    }
-
-    try {
-      await mockBackend.setCalendarEntry(pairing.id, todayStr, targetStatus);
-    } catch (err) {
-      console.error("Auto calendar evaluation error:", err);
-    }
+  createRewardItem: async (title, cost) => {
+    const { pairing } = get();
+    await supabaseBackend.createRewardItem({ pairing_id: pairing.id, title, cost });
   },
 
-  toggleDailyTask: async (taskId) => {
-    const { showToast } = get();
-    try {
-      const updated = await mockBackend.toggleDailyTask(taskId);
-      await get().loadPairingData();
-      if (updated.is_completed) {
-        playSound('taskComplete');
-        showToast('Task completed! +25 XP awarded 🎉', 'success');
-      }
-      await get().evaluateAutoCalendarStatus();
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
+  deleteRewardItem: async (itemId) => await supabaseBackend.deleteRewardItem(itemId),
+
+  redeemStoreItem: async (itemId, cost) => {
+    const { pairing, profile } = get();
+    await supabaseBackend.redeemStoreItem(pairing.id, profile.id, itemId, cost);
   },
 
-  overrideDailyTask: async (taskId, isCompleted = true) => {
-    const { showToast } = get();
-    try {
-      await mockBackend.overrideDailyTask(taskId, isCompleted);
-      await get().loadPairingData();
-      playSound('praise');
-      showToast(isCompleted ? 'Owner override: Task marked complete! 🟢' : 'Owner override: Task marked incomplete', 'info');
-      await get().evaluateAutoCalendarStatus();
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
+  processRedemption: async (redemptionId, status) => await supabaseBackend.processRedemption(redemptionId, status),
+
+  sendPraiseNote: async (message) => {
+    const { pairing, profile } = get();
+    await supabaseBackend.sendPraiseNote({ pairing_id: pairing.id, sender_id: profile.id, message });
   },
 
-  deleteDailyTask: async (taskId) => {
-    const { showToast } = get();
-    try {
-      await mockBackend.deleteDailyTask(taskId);
-      await get().loadPairingData();
-      showToast('Daily task removed', 'info');
-      await get().evaluateAutoCalendarStatus();
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
+  setPetPoints: async (points) => {
+    const { partnerProfile } = get();
+    await supabaseBackend.setPetPoints(partnerProfile.id, points);
   },
 
-  updateTimezone: async (timezone) => {
-    const { user, showToast } = get();
-    if (!user) return;
-    try {
-      const updated = await mockBackend.updateProfile(user.id, { timezone });
-      set({ user: updated });
-      showToast(`Timezone updated to ${timezone} 🌍`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
+  addXP: async (amount) => {
+    const { partnerProfile } = get();
+    await supabaseBackend.addXP(partnerProfile.id, amount);
   },
 
-  // Praise Notes
-  sendPraiseNote: async (type, message) => {
-    const { pairing, user, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.sendPraiseNote(pairing.id, user.id, type, message);
-      await get().loadPairingData();
-      playSound('praise');
-      triggerConfetti();
-      showToast('Praise sent to your Pet! 💖', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  // Owner Points Override
-  setPetPoints: async (newPoints) => {
-    const { pairing, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.setPetPoints(pairing.id, newPoints);
-      await get().loadPairingData();
-      playSound('click');
-      showToast(`Pet points balance updated to ${newPoints} pts`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  // Owner Reward Store Management
-  createRewardItem: async (name, description, pointCost) => {
-    const { pairing, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.createRewardItem(pairing.id, name, description, pointCost);
-      await get().loadPairingData();
-      playSound('click');
-      showToast(`Added "${name}" to Reward Store!`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  deleteRewardItem: async (itemId) => {
-    const { showToast } = get();
-    try {
-      await mockBackend.deleteRewardItem(itemId);
-      await get().loadPairingData();
-      showToast('Reward item removed', 'info');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  submitRewardProposal: async (title, description) => {
-    const { pairing, user, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.createProposal(pairing.id, user.id, title, description);
-      await get().loadPairingData();
-      playSound('click');
-      showToast('Reward proposal sent to Owner!', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  processProposal: async (proposalId, status, assignedPointsCost = 0) => {
-    const { showToast } = get();
-    try {
-      await mockBackend.processProposal(proposalId, status, assignedPointsCost);
-      playSound(status === 'approved' ? 'praise' : 'click');
-      showToast(status === 'approved' ? `Approved & added to Store at ${assignedPointsCost} pts!` : `Proposal ${status}`, 'success');
-      await get().loadPairingData();
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  redeemStoreItem: async (rewardItem) => {
-    const { pairing, user, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.redeemStoreItem(pairing.id, user.id, rewardItem);
-      await get().loadPairingData();
-      playSound('click');
-      showToast(`Requested redemption for "${rewardItem.name}" (${rewardItem.point_cost} pts)! Sent to Owner for approval.`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  processRedemption: async (redemptionId, status) => {
-    const { showToast } = get();
-    try {
-      await mockBackend.processRedemption(redemptionId, status);
-      playSound(status === 'approved' ? 'levelUp' : 'click');
-      if (status === 'approved') triggerConfetti();
-      showToast(status === 'approved' ? 'Redemption Approved & Fulfilled! 🎉' : 'Redemption Denied (Points refunded)', 'info');
-      await get().loadPairingData();
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  setCalendarStatus: async (dateStr, status) => {
-    const { pairing, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.setCalendarEntry(pairing.id, dateStr, status);
-      await get().loadPairingData();
-      playSound('click');
-      if (status === 'green') triggerConfetti();
-      showToast(`Marked ${dateStr} as ${status}`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  updatePraiseAndSpecies: async (species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null, customThemePrimary = null, customThemeAccent = null) => {
-    const { user, showToast } = get();
-    try {
-      const updates = { 
-        pet_species: species, 
-        praise_terms: praiseTerms,
-        custom_species_name: customSpeciesName,
-        custom_species_icon: customSpeciesIcon
-      };
-      if (customThemePrimary) updates.custom_theme_primary = customThemePrimary;
-      if (customThemeAccent) updates.custom_theme_accent = customThemeAccent;
-
-      const updated = await mockBackend.updateProfile(user.id, updates);
-      set({ user: updated });
-      applyCustomTheme(updated);
-      playSound('praise');
-      showToast('Profile & species settings saved!', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  updateCustomTheme: async (primary, accent, mode = 'dark') => {
-    const { user, showToast } = get();
-    if (!user) return;
-    try {
-      const updated = await mockBackend.updateProfile(user.id, {
-        custom_theme_primary: primary,
-        custom_theme_accent: accent,
-        custom_theme_mode: mode
-      });
-      set({ user: updated });
-      applyCustomTheme(updated);
-      playSound('praise');
-      triggerConfetti();
-      showToast('Page theme colors updated! 🎨', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  updatePetNickname: async (nickname) => {
-    const { user, showToast } = get();
-    if (!user) return;
-    try {
-      const updated = await mockBackend.updateProfile(user.id, { pet_nickname: nickname });
-      set({ user: updated });
-      showToast('Pet nickname updated! 🐾', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  updateReminderTime: async (timeStr) => {
-    const { user, showToast } = get();
-    if (!user) return;
-    try {
-      const updated = await mockBackend.updateProfile(user.id, { reminder_time: timeStr });
-      set({ user: updated });
-      showToast(`Daily reminder time set to ${timeStr} ⏰`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  toggleXPBar: async (show) => {
-    const { user, showToast } = get();
-    if (!user) return;
-    try {
-      const updated = await mockBackend.updateProfile(user.id, { show_xp_bar: show });
-      set({ user: updated });
-      showToast(show ? 'XP Bar is now visible 📊' : 'XP Bar hidden 🙈', 'info');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  setPairingPin: async (pin) => {
-    const { user, showToast } = get();
-    if (!user) return;
-    try {
-      const updated = await mockBackend.updateProfile(user.id, { pairing_pin: pin });
-      set({ user: updated });
-      showToast(pin ? 'Security PIN enabled 🔒' : 'Security PIN removed 🔓', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  verifyPin: (inputPin) => {
-    const { user } = get();
-    if (!user?.pairing_pin) return true;
-    return user.pairing_pin === inputPin;
-  },
-
-  updatePairingRules: async ({ maxPendingProposals, weekendMultiplier }) => {
-    const { pairing, showToast } = get();
-    if (!pairing) return;
-    try {
-      const updated = await mockBackend.updatePairingRules(pairing.id, { maxPendingProposals, weekendMultiplier });
-      set({ pairing: updated });
-      showToast('Pairing proposal limits & weekend multiplier saved! ⚙️', 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
-  pairWithCode: async (targetUsernameOrUid, targetPairCode) => {
-    const { user, showToast } = get();
-    try {
-      await mockBackend.pairWithCode(user.id, targetUsernameOrUid, targetPairCode);
-      playSound('levelUp');
-      triggerConfetti();
-      showToast('Secure pairing complete! 🎉', 'success');
-      await get().loadPairingData();
-    } catch (err) {
-      showToast(err.message || 'Failed to pair', 'warning');
-      throw err;
-    }
-  },
-
-  unpair: async () => {
-    const { pairing, showToast } = get();
-    if (!pairing) return;
-    try {
-      await mockBackend.unpair(pairing.id);
-      set({ pairing: null, partnerProfile: null, calendarEntries: [], proposals: [], rewardItems: [], redemptions: [], dailyTasks: [], praiseNotes: [] });
-      showToast('Unpaired successfully.', 'info');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
+  signOut: async () => {
+    await supabase.auth.signOut();
+    const { realtimeChannel } = get();
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+    set({ session: null, userId: null, profile: null, pairing: null, partnerProfile: null, realtimeChannel: null });
   }
 }));

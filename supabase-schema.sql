@@ -195,3 +195,104 @@ ALTER PUBLICATION supabase_realtime ADD TABLE redemptions;
 ALTER PUBLICATION supabase_realtime ADD TABLE daily_tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE praise_notes;
 ALTER PUBLICATION supabase_realtime ADD TABLE pairings;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- 1. Profile INSERT Policy (Required for user onboarding)
+CREATE POLICY "Users can insert their own profile" 
+ON public.profiles FOR INSERT 
+WITH CHECK (auth.uid() = id);
+
+-- 2. Trigger function for updated_at timestamps
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $func$
+BEGIN
+   NEW.updated_at = NOW();
+   RETURN NEW;
+END;
+$func$ language 'plpgsql';
+
+CREATE TRIGGER update_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_pairings_updated_at
+BEFORE UPDATE ON public.pairings
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 3. RPC: Add XP and handle leveling logic
+CREATE OR REPLACE FUNCTION add_xp(p_profile_id UUID, p_amount INT)
+RETURNS VOID AS $func$
+DECLARE
+  current_xp INT;
+  current_level INT;
+BEGIN
+  SELECT xp, level INTO current_xp, current_level FROM public.profiles WHERE id = p_profile_id;
+  
+  current_xp := current_xp + p_amount;
+  current_level := 1 + (current_xp / 100); -- Basic progression constraint: 100 XP per level
+  
+  UPDATE public.profiles SET xp = current_xp, level = current_level WHERE id = p_profile_id;
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. RPC: Process calendar entry and calculate daily points
+CREATE OR REPLACE FUNCTION process_calendar_entry(p_pairing_id UUID, p_date DATE, p_status TEXT)
+RETURNS VOID AS $func$
+DECLARE
+  target_pet_id UUID;
+  existing_status TEXT;
+  delta INT := 0;
+BEGIN
+  SELECT pet_id INTO target_pet_id FROM public.pairings WHERE id = p_pairing_id;
+  
+  SELECT status INTO existing_status FROM public.calendar_entries 
+  WHERE pairing_id = p_pairing_id AND entry_date = p_date;
+
+  IF FOUND THEN
+    UPDATE public.calendar_entries SET status = p_status, updated_at = NOW() 
+    WHERE pairing_id = p_pairing_id AND entry_date = p_date;
+  ELSE
+    INSERT INTO public.calendar_entries (pairing_id, entry_date, status)
+    VALUES (p_pairing_id, p_date, p_status);
+  END IF;
+
+  -- Points handling (modify integers as needed)
+  IF p_status = 'good' AND (existing_status IS NULL OR existing_status != 'good') THEN
+    delta := 10;
+  ELSIF p_status = 'bad' AND (existing_status IS NULL OR existing_status != 'bad') THEN
+    delta := -10;
+  END IF;
+
+  IF delta != 0 THEN
+    UPDATE public.profiles SET points = points + delta WHERE id = target_pet_id;
+  END IF;
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5. RPC: Set exact Pet points
+CREATE OR REPLACE FUNCTION set_pet_points(p_pet_id UUID, p_points INT)
+RETURNS VOID AS $func$
+BEGIN
+  UPDATE public.profiles SET points = p_points WHERE id = p_pet_id;
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
