@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { stackUpdate } from '../utils/updateStacker';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -41,9 +42,11 @@ export const supabaseBackend = {
 
   updateProfile: async (userId, updates) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
-    if (error) throw error;
-    return data;
+    return stackUpdate(`profile:${userId}`, async () => {
+      const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
+      if (error) throw error;
+      return data;
+    }, 350);
   },
 
   getPairing: async (userId) => {
@@ -249,14 +252,16 @@ export const supabaseBackend = {
   setPetPoints: async (petId, points) => {
     if (!supabase) return null;
     const newBalance = Math.max(0, parseInt(points, 10) || 0);
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ points_balance: newBalance })
-      .eq('id', petId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return stackUpdate(`setPetPoints:${petId}`, async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ points_balance: newBalance })
+        .eq('id', petId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }, 400);
   },
 
   addXP: async (petId, amount) => {
@@ -345,48 +350,54 @@ export const supabaseBackend = {
 
   updatePairingPointValues: async (pairingId, pointValues) => {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('pairings')
-      .update({
-        point_value_green: parseInt(pointValues.green ?? 1, 10),
-        point_value_yellow: parseInt(pointValues.yellow ?? 0, 10),
-        point_value_red: parseInt(pointValues.red ?? 0, 10)
-      })
-      .eq('id', pairingId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return stackUpdate(`pairingPointValues:${pairingId}`, async () => {
+      const { data, error } = await supabase
+        .from('pairings')
+        .update({
+          point_value_green: parseInt(pointValues.green ?? 1, 10),
+          point_value_yellow: parseInt(pointValues.yellow ?? 0, 10),
+          point_value_red: parseInt(pointValues.red ?? 0, 10)
+        })
+        .eq('id', pairingId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }, 400);
   },
 
   updatePairingCurrency: async (pairingId, currencyConfig) => {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('pairings')
-      .update({
-        custom_currency_name: currencyConfig.name || null,
-        custom_currency_singular: currencyConfig.singular || currencyConfig.name || null,
-        custom_currency_icon: currencyConfig.icon || null
-      })
-      .eq('id', pairingId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return stackUpdate(`pairingCurrency:${pairingId}`, async () => {
+      const { data, error } = await supabase
+        .from('pairings')
+        .update({
+          custom_currency_name: currencyConfig.name || null,
+          custom_currency_singular: currencyConfig.singular || currencyConfig.name || null,
+          custom_currency_icon: currencyConfig.icon || null
+        })
+        .eq('id', pairingId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }, 400);
   },
 
   updatePairingRules: async (pairingId, { maxPendingProposals, weekendMultiplier }) => {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('pairings')
-      .update({
-        max_pending_proposals: parseInt(maxPendingProposals, 10) || 3,
-        weekend_multiplier: parseFloat(weekendMultiplier) || 1.0
-      })
-      .eq('id', pairingId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return stackUpdate(`pairingRules:${pairingId}`, async () => {
+      const { data, error } = await supabase
+        .from('pairings')
+        .update({
+          max_pending_proposals: parseInt(maxPendingProposals, 10) || 3,
+          weekend_multiplier: parseFloat(weekendMultiplier) || 1.0
+        })
+        .eq('id', pairingId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }, 400);
   }
 };

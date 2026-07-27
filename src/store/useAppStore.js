@@ -369,17 +369,27 @@ export const useAppStore = create((set, get) => ({
     const { pairing, partnerProfile, user, session, showToast } = get();
     const petId = user?.role === 'pet' ? user.id : partnerProfile?.id;
     if (!pairing || !petId) return;
+
+    const targetBalance = Math.max(0, parseInt(newPoints, 10) || 0);
+
+    // Optimistically update UI state immediately
+    if (partnerProfile && partnerProfile.id === petId) {
+      set({ partnerProfile: { ...partnerProfile, points_balance: targetBalance } });
+    }
+    if (user && user.id === petId) {
+      set({ user: { ...user, points_balance: targetBalance }, profile: { ...user, points_balance: targetBalance } });
+    }
+
     try {
       if (isSupabaseConfigured && session) {
-        await supabaseBackend.setPetPoints(petId, newPoints);
+        await supabaseBackend.setPetPoints(petId, targetBalance);
       } else {
-        await mockBackend.setPetPoints(pairing.id, newPoints);
+        await mockBackend.setPetPoints(pairing.id, targetBalance);
       }
-      await get().loadPairingData();
       playSound('click');
-      showToast(`Pet points balance updated to ${newPoints} pts`, 'success');
     } catch (err) {
       showToast(err.message, 'warning');
+      get().loadPairingData();
     }
   },
 
