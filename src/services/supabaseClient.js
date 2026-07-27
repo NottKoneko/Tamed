@@ -335,5 +335,52 @@ export const supabaseBackend = {
     const { data, error } = await supabase.from('pairings').delete().eq('id', pairingId);
     if (error) throw error;
     return data;
+  },
+
+  updatePairingPointValues: async (pairingId, pointValues) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('pairings')
+      .update({
+        point_value_green: parseInt(pointValues.green ?? 1, 10),
+        point_value_yellow: parseInt(pointValues.yellow ?? 0, 10),
+        point_value_red: parseInt(pointValues.red ?? 0, 10)
+      })
+      .eq('id', pairingId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  updatePairingCurrency: async (pairingId, currencyConfig) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('pairings')
+      .update({
+        custom_currency_name: currencyConfig.name || null,
+        custom_currency_singular: currencyConfig.singular || currencyConfig.name || null,
+        custom_currency_icon: currencyConfig.icon || null
+      })
+      .eq('id', pairingId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  updatePairingRules: async (pairingId, { maxPendingProposals, weekendMultiplier }) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('pairings')
+      .update({
+        max_pending_proposals: parseInt(maxPendingProposals, 10) || 3,
+        weekend_multiplier: parseFloat(weekendMultiplier) || 1.0
+      })
+      .eq('id', pairingId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 };

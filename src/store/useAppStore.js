@@ -629,10 +629,15 @@ export const useAppStore = create((set, get) => ({
   },
 
   updatePairingPointValues: async (pointValues) => {
-    const { pairing, showToast } = get();
+    const { pairing, session, showToast } = get();
     if (!pairing) return;
     try {
-      const updatedPairing = await mockBackend.updatePairingPointValues(pairing.id, pointValues);
+      let updatedPairing;
+      if (isSupabaseConfigured && session) {
+        updatedPairing = await supabaseBackend.updatePairingPointValues(pairing.id, pointValues);
+      } else {
+        updatedPairing = await mockBackend.updatePairingPointValues(pairing.id, pointValues);
+      }
       set({ pairing: updatedPairing });
       playSound('click');
       showToast('Color point values updated!', 'success');
@@ -642,10 +647,15 @@ export const useAppStore = create((set, get) => ({
   },
 
   updatePairingCurrency: async (currencyConfig) => {
-    const { pairing, showToast } = get();
+    const { pairing, session, showToast } = get();
     if (!pairing) return;
     try {
-      const updatedPairing = await mockBackend.updatePairingCurrency(pairing.id, currencyConfig);
+      let updatedPairing;
+      if (isSupabaseConfigured && session) {
+        updatedPairing = await supabaseBackend.updatePairingCurrency(pairing.id, currencyConfig);
+      } else {
+        updatedPairing = await mockBackend.updatePairingCurrency(pairing.id, currencyConfig);
+      }
       set({ pairing: updatedPairing });
       playSound('praise');
       triggerConfetti();
@@ -656,10 +666,15 @@ export const useAppStore = create((set, get) => ({
   },
 
   updatePairingRules: async ({ maxPendingProposals, weekendMultiplier }) => {
-    const { pairing, showToast } = get();
+    const { pairing, session, showToast } = get();
     if (!pairing) return;
     try {
-      const updated = await mockBackend.updatePairingRules(pairing.id, { maxPendingProposals, weekendMultiplier });
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updatePairingRules(pairing.id, { maxPendingProposals, weekendMultiplier });
+      } else {
+        updated = await mockBackend.updatePairingRules(pairing.id, { maxPendingProposals, weekendMultiplier });
+      }
       set({ pairing: updated });
       showToast('Pairing proposal limits & weekend multiplier saved! ⚙️', 'success');
     } catch (err) {
