@@ -19,7 +19,8 @@ export const Rewards = () => {
     processProposal,
     processRedemption,
     showToast,
-    verifyPin
+    verifyPin,
+    setActiveTab
   } = useAppStore();
 
   const isOwner = user?.role === 'owner';
@@ -110,6 +111,25 @@ export const Rewards = () => {
     approved: <span style={{ backgroundColor: 'var(--color-green)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Approved & Fulfilled 🎉</span>,
     denied: <span style={{ backgroundColor: 'var(--color-red)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Denied (Points Refunded)</span>
   };
+
+  if (!pairing) {
+    return (
+      <div className="page-container">
+        <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '1rem', borderRadius: '50%', backgroundColor: 'var(--color-surface-hover)', color: 'var(--color-accent)' }}>
+            <Gift size={36} color="var(--color-accent)" />
+          </div>
+          <h2 style={{ fontSize: '1.2rem', color: 'var(--color-text-main)' }}>Reward Store Locked (Unpaired)</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', maxWidth: '340px', lineHeight: '1.4' }}>
+            The Reward Store & Wish Proposals are shared between partners. Connect with your partner to start creating store rewards!
+          </p>
+          <button onClick={() => setActiveTab('home')} className="btn-primary" style={{ width: 'auto', padding: '0.65rem 1.25rem', marginTop: '0.5rem' }}>
+            Link Accounts on Home Screen ➔
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

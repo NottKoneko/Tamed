@@ -72,121 +72,269 @@ export const Home = () => {
     setIsSendingPraise(false);
   };
 
+  const [homePairUser, setHomePairUser] = useState('');
+  const [homePairCode, setHomePairCode] = useState('');
+  const [homePairLoading, setHomePairLoading] = useState(false);
+
+  const handleHomePair = async (e) => {
+    e.preventDefault();
+    if (!homePairUser.trim() || !homePairCode.trim()) return;
+    setHomePairLoading(true);
+    try {
+      await pairWithCode(homePairUser.trim(), homePairCode.trim());
+    } catch (err) {
+      // Toast handled by store
+    } finally {
+      setHomePairLoading(false);
+    }
+  };
+
+  const copyPairCode = () => {
+    if (user?.pair_code) {
+      navigator.clipboard.writeText(user.pair_code);
+      showToast('Pair code copied to clipboard! 📋', 'success');
+    }
+  };
+
   return (
     <div className="page-container">
-      {/* Hero Welcome Card with Mascot Avatar */}
-      <div style={{
-        background: 'var(--gradient-hero)',
-        borderRadius: 'var(--border-radius-lg)',
-        padding: '1.5rem',
-        color: 'white',
-        boxShadow: 'var(--shadow-glow)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', zIndex: 1, position: 'relative' }}>
+      {/* Hero Card Area */}
+      {!pairing ? (
+        /* ── UNPAIRED: PAIR ACCOUNTS HERO CARD ───────────────── */
+        <div style={{
+          background: 'var(--gradient-hero)',
+          borderRadius: 'var(--border-radius-lg)',
+          padding: '1.5rem',
+          color: 'white',
+          boxShadow: 'var(--shadow-glow)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.125rem'
+        }}>
           <div>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.85, fontWeight: 700 }}>
-              {isOwner ? 'Master Control' : 'Pet Dashboard'}
+            <span style={{ fontSize: '0.725rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.85, fontWeight: 700 }}>
+              Account Link Required
             </span>
-            <h1 style={{ fontSize: '1.4rem', color: 'white', marginTop: '0.1rem' }}>
-              {isOwner 
-                ? `Managing ${partnerProfile?.pet_nickname || partnerProfile?.username || 'Pet'}` 
-                : `${user?.praise_terms || 'Good girl!'} ${user?.pet_nickname || user?.username}`}
+            <h1 style={{ fontSize: '1.35rem', color: 'white', marginTop: '0.1rem' }}>
+              Connect with your partner 🔗
             </h1>
-            <p style={{ fontSize: '0.825rem', opacity: 0.9, marginTop: '0.25rem' }}>
-              {isOwner 
-                ? `Paired with ${partnerProfile?.pet_nickname || partnerProfile?.username || 'No Pet'} (${partnerProfile?.uid || ''})` 
-                : `Paired with ${partnerProfile?.username || 'Owner'}`}
+            <p style={{ fontSize: '0.825rem', opacity: 0.9, marginTop: '0.2rem', lineHeight: '1.4' }}>
+              Welcome <b>{user?.username}</b>! Connect with your partner using your pair code to unlock daily green days, behavior codex, and your shared reward store.
             </p>
-
-            <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: 'white', backdropFilter: 'blur(4px)' }}>
-                Mood: {petProfile?.mood || 'Happy'}
-              </span>
-              {pairing?.weekend_multiplier > 1.0 && (
-                <span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.3)', color: '#fef3c7', backdropFilter: 'blur(4px)', border: '1px solid rgba(245,158,11,0.5)' }}>
-                  ⚡ {pairing.weekend_multiplier}x Weekend Points
-                </span>
-              )}
-            </div>
           </div>
 
-          <MascotAvatar profile={petProfile} isEditable={false} />
-        </div>
-
-        {/* Interactive Mood Selector Bar for Pet */}
-        {user?.role === 'pet' && (
+          {/* User's Own Pair Code Box */}
           <div style={{
-            marginTop: '1.125rem',
-            paddingTop: '0.85rem',
-            borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+            backgroundColor: 'rgba(255, 255, 255, 0.18)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: 'var(--border-radius)',
+            padding: '0.75rem 1rem',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.4rem',
-            overflowX: 'auto',
-            paddingBottom: '0.25rem',
-            scrollbarWidth: 'none'
+            justify: 'space-between'
           }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0, marginRight: '0.2rem' }}>
-              Set Mood:
-            </span>
-            {[
-              { label: 'Happy', icon: '😊' },
-              { label: 'Pampered', icon: '👑' },
-              { label: 'Sleepy', icon: '😴' },
-              { label: 'Proud', icon: '🌟' },
-              { label: 'Playful', icon: '🎾' }
-            ].map((m) => {
-              const isSelected = (petProfile?.mood || 'Happy') === m.label;
-              return (
-                <button
-                  key={m.label}
-                  type="button"
-                  onClick={() => updatePetMood(m.label)}
+            <div>
+              <div style={{ fontSize: '0.675rem', textTransform: 'uppercase', opacity: 0.85, fontWeight: 700, letterSpacing: '0.04em' }}>
+                Your Username & Pair Code
+              </div>
+              <div style={{ fontWeight: 800, fontSize: '0.9rem', marginTop: '0.1rem' }}>
+                {user?.username} <span style={{ opacity: 0.75, fontSize: '0.775rem' }}>({user?.uid})</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={copyPairCode}
+              style={{
+                backgroundColor: 'white',
+                color: 'var(--color-primary-dark)',
+                border: 'none',
+                padding: '0.4rem 0.75rem',
+                borderRadius: 'var(--border-radius-full)',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                letterSpacing: '0.1em',
+                fontFamily: 'monospace',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              {user?.pair_code || '849201'}
+              <Copy size={13} />
+            </button>
+          </div>
+
+          {/* Inline Pairing Form */}
+          <form onSubmit={handleHomePair} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+              <div>
+                <label style={{ fontSize: '0.7rem', fontWeight: 700, display: 'block', marginBottom: '0.2rem', opacity: 0.9 }}>
+                  Partner Username/UID
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Alex"
+                  value={homePairUser}
+                  onChange={(e) => setHomePairUser(e.target.value)}
                   style={{
-                    fontSize: '0.75rem',
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: 'var(--border-radius-full)',
-                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.2)',
-                    color: isSelected ? 'var(--color-primary-dark)' : 'white',
-                    fontWeight: isSelected ? 800 : 600,
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+                    width: '100%',
+                    padding: '0.55rem 0.75rem',
+                    borderRadius: 'var(--border-radius)',
+                    border: '1px solid rgba(255, 255, 255, 0.4)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    color: 'var(--color-text-main)',
+                    fontWeight: 600,
+                    fontSize: '0.825rem',
+                    outline: 'none'
                   }}
-                >
-                  {m.icon} {m.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                />
+              </div>
 
-      {/* Level & XP Progress Bar */}
-      {user?.show_xp_bar !== false && (
-        <XPProgressBar xp={xp} level={level} />
-      )}
+              <div>
+                <label style={{ fontSize: '0.7rem', fontWeight: 700, display: 'block', marginBottom: '0.2rem', opacity: 0.9 }}>
+                  Partner 6-Digit Code
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  placeholder="e.g. 849201"
+                  value={homePairCode}
+                  onChange={(e) => setHomePairCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  style={{
+                    width: '100%',
+                    padding: '0.55rem 0.75rem',
+                    borderRadius: 'var(--border-radius)',
+                    border: '1px solid rgba(255, 255, 255, 0.4)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    color: 'var(--color-text-main)',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    fontFamily: 'monospace',
+                    fontSize: '0.825rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+            </div>
 
-      {/* Unpaired Notice Banner */}
-      {!pairing && (
-        <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', backgroundColor: 'var(--color-surface-hover)', border: '1.5px solid var(--color-primary-light)' }}>
-          <div>
-            <h3 style={{ fontSize: '1rem', color: 'var(--color-primary-dark)' }}>Pairing Pending 🔗</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-              Link accounts with your partner using their Username & 6-digit Pair Code.
-            </p>
+            <button
+              type="submit"
+              disabled={homePairLoading}
+              style={{
+                width: '100%',
+                padding: '0.7rem',
+                borderRadius: 'var(--border-radius)',
+                backgroundColor: 'white',
+                color: 'var(--color-primary-dark)',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                transition: 'all 0.2s ease',
+                marginTop: '0.15rem'
+              }}
+            >
+              {homePairLoading ? 'Connecting...' : 'Authenticate & Link Accounts ➔'}
+            </button>
+          </form>
+        </div>
+      ) : (
+        /* ── PAIRED HERO WELCOME CARD ────────────────────────── */
+        <div style={{
+          background: 'var(--gradient-hero)',
+          borderRadius: 'var(--border-radius-lg)',
+          padding: '1.5rem',
+          color: 'white',
+          boxShadow: 'var(--shadow-glow)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', zIndex: 1, position: 'relative' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.85, fontWeight: 700 }}>
+                {isOwner ? 'Master Control' : 'Pet Dashboard'}
+              </span>
+              <h1 style={{ fontSize: '1.4rem', color: 'white', marginTop: '0.1rem' }}>
+                {isOwner 
+                  ? `Managing ${partnerProfile?.pet_nickname || partnerProfile?.username || 'Pet'}` 
+                  : `${user?.praise_terms || 'Good girl!'} ${user?.pet_nickname || user?.username}`}
+              </h1>
+              <p style={{ fontSize: '0.825rem', opacity: 0.9, marginTop: '0.25rem' }}>
+                {isOwner 
+                  ? `Paired with ${partnerProfile?.pet_nickname || partnerProfile?.username || 'No Pet'} (${partnerProfile?.uid || ''})` 
+                  : `Paired with ${partnerProfile?.username || 'Owner'}`}
+              </p>
+
+              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: 'white', backdropFilter: 'blur(4px)' }}>
+                  Mood: {petProfile?.mood || 'Happy'}
+                </span>
+                {pairing?.weekend_multiplier > 1.0 && (
+                  <span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.3)', color: '#fef3c7', backdropFilter: 'blur(4px)', border: '1px solid rgba(245,158,11,0.5)' }}>
+                    ⚡ {pairing.weekend_multiplier}x Weekend Points
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <MascotAvatar profile={petProfile} isEditable={false} />
           </div>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className="btn-primary"
-            style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-          >
-            Pair Now ➔
-          </button>
+
+          {/* Interactive Mood Selector Bar for Pet */}
+          {user?.role === 'pet' && (
+            <div style={{
+              marginTop: '1.125rem',
+              paddingTop: '0.85rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              overflowX: 'auto',
+              paddingBottom: '0.25rem',
+              scrollbarWidth: 'none'
+            }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0, marginRight: '0.2rem' }}>
+                Set Mood:
+              </span>
+              {[
+                { label: 'Happy', icon: '😊' },
+                { label: 'Pampered', icon: '👑' },
+                { label: 'Sleepy', icon: '😴' },
+                { label: 'Proud', icon: '🌟' },
+                { label: 'Playful', icon: '🎾' }
+              ].map((m) => {
+                const isSelected = (petProfile?.mood || 'Happy') === m.label;
+                return (
+                  <button
+                    key={m.label}
+                    type="button"
+                    onClick={() => updatePetMood(m.label)}
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: 'var(--border-radius-full)',
+                      backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.2)',
+                      color: isSelected ? 'var(--color-primary-dark)' : 'white',
+                      fontWeight: isSelected ? 800 : 600,
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+                    }}
+                  >
+                    {m.icon} {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

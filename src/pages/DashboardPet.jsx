@@ -4,7 +4,7 @@ import { Calendar } from '../components/Calendar';
 import { Sparkles, Trophy, Gift } from 'lucide-react';
 
 export const DashboardPet = () => {
-  const { user, calendarEntries, setActiveTab, partnerProfile } = useAppStore();
+  const { user, pairing, calendarEntries, setActiveTab, partnerProfile } = useAppStore();
 
   const totalPoints = user?.points_balance || 0;
   const greenDaysCount = (calendarEntries || []).filter((e) => e.status === 'green').length;
@@ -15,6 +15,25 @@ export const DashboardPet = () => {
     fox: '🦊',
     custom: '✨'
   }[user?.pet_species || 'puppy'];
+
+  if (!pairing) {
+    return (
+      <div className="page-container">
+        <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: '1rem', borderRadius: '50%', backgroundColor: 'var(--color-surface-hover)', color: 'var(--color-primary)' }}>
+            <Sparkles size={36} color="var(--color-primary)" />
+          </div>
+          <h2 style={{ fontSize: '1.2rem', color: 'var(--color-text-main)' }}>Schedule Locked (Unpaired)</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', maxWidth: '340px', lineHeight: '1.4' }}>
+            Daily check-in logs and green day tracking require an active pairing with your owner.
+          </p>
+          <button onClick={() => setActiveTab('home')} className="btn-primary" style={{ width: 'auto', padding: '0.65rem 1.25rem', marginTop: '0.5rem' }}>
+            Link Accounts on Home Screen ➔
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
