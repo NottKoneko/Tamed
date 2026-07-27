@@ -7,26 +7,28 @@ export const THEME_MODES = {
   dark: {
     id: 'dark',
     name: '🌙 Midnight Dark',
-    background: '#13111e',
-    surface: '#1e1b2e',
-    surfaceHover: '#2d2a42',
-    textMain: '#f8fafc',
-    textMuted: '#cbd5e1',
-    border: 'rgba(255, 255, 255, 0.12)',
+    background: '#0f0d1a',
+    surface: 'rgba(30, 27, 46, 0.85)',
+    surfaceHover: 'rgba(45, 42, 66, 0.9)',
+    textMain: '#eef0f6',
+    textMuted: '#9da5b8',
+    border: 'rgba(255, 255, 255, 0.08)',
     shadowBase: '0,0,0',
-    shadowAlpha: '0.40'
+    shadowAlpha: '0.45',
+    cardGradient: 'linear-gradient(160deg, rgba(42, 38, 64, 0.9) 0%, rgba(20, 17, 32, 0.95) 100%)'
   },
   dark2: {
     id: 'dark2',
     name: '🖤 Obsidian Black',
-    background: '#09090b',
-    surface: '#18181b',
-    surfaceHover: '#27272a',
-    textMain: '#ffffff',
-    textMuted: '#e2e8f0',
-    border: 'rgba(255, 255, 255, 0.14)',
+    background: '#050507',
+    surface: 'rgba(16, 16, 20, 0.88)',
+    surfaceHover: 'rgba(28, 28, 35, 0.92)',
+    textMain: '#f0f2f8',
+    textMuted: '#8a92a8',
+    border: 'rgba(255, 255, 255, 0.07)',
     shadowBase: '0,0,0',
-    shadowAlpha: '0.60'
+    shadowAlpha: '0.65',
+    cardGradient: 'linear-gradient(160deg, rgba(22, 22, 30, 0.92) 0%, rgba(8, 8, 12, 0.97) 100%)'
   },
   light: {
     id: 'light',
@@ -38,7 +40,8 @@ export const THEME_MODES = {
     textMuted: '#64748b',
     border: '#e2e8f0',
     shadowBase: '100,116,139',
-    shadowAlpha: '0.10'
+    shadowAlpha: '0.10',
+    cardGradient: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
   },
   soft: {
     id: 'soft',
@@ -50,7 +53,8 @@ export const THEME_MODES = {
     textMuted: '#78614a',
     border: '#ecdeca',
     shadowBase: '120,90,60',
-    shadowAlpha: '0.10'
+    shadowAlpha: '0.10',
+    cardGradient: 'linear-gradient(135deg, #fffdf9 0%, #fdf8f0 100%)'
   }
 };
 
@@ -96,17 +100,23 @@ export const applyCustomTheme = (profile) => {
 
   // High contrast adjustments for dark vs light modes
   if (isDarkMode) {
-    // In dark mode, primary-dark must be brightened for crisp, high-contrast headings & badges!
     root.style.setProperty('--color-primary-dark', adjustBrightness(primary, 30));
-    root.style.setProperty('--color-primary-light', `${primary}35`);
-    root.style.setProperty('--color-green-light', 'rgba(16, 185, 129, 0.22)');
-    root.style.setProperty('--color-yellow-light', 'rgba(245, 158, 11, 0.22)');
-    root.style.setProperty('--color-red-light', 'rgba(239, 68, 68, 0.22)');
+    root.style.setProperty('--color-primary-light', `${primary}28`);
+    // Softer semantic colors — muted enough to not feel harsh
+    root.style.setProperty('--color-green', '#34d399');
+    root.style.setProperty('--color-green-light', 'rgba(52, 211, 153, 0.15)');
+    root.style.setProperty('--color-yellow', '#fbbf24');
+    root.style.setProperty('--color-yellow-light', 'rgba(251, 191, 36, 0.15)');
+    root.style.setProperty('--color-red', '#f87171');
+    root.style.setProperty('--color-red-light', 'rgba(248, 113, 113, 0.15)');
   } else {
     root.style.setProperty('--color-primary-dark', adjustBrightness(primary, -22));
     root.style.setProperty('--color-primary-light', `${primary}18`);
+    root.style.setProperty('--color-green', '#10b981');
     root.style.setProperty('--color-green-light', '#d1fae5');
+    root.style.setProperty('--color-yellow', '#f59e0b');
     root.style.setProperty('--color-yellow-light', '#fef3c7');
+    root.style.setProperty('--color-red', '#ef4444');
     root.style.setProperty('--color-red-light', '#fee2e2');
   }
 
@@ -117,14 +127,21 @@ export const applyCustomTheme = (profile) => {
   root.style.setProperty('--color-text-main', modeConfig.textMain);
   root.style.setProperty('--color-text-muted', modeConfig.textMuted);
   root.style.setProperty('--color-border', modeConfig.border);
-  root.style.setProperty('--gradient-card', `linear-gradient(135deg, ${modeConfig.surface} 0%, ${modeConfig.background} 100%)`);
+  // Use the premium card gradient from the mode config
+  root.style.setProperty('--gradient-card', modeConfig.cardGradient || `linear-gradient(135deg, ${modeConfig.surface} 0%, ${modeConfig.background} 100%)`);
 
-  // Environment shadows
+  // Environment shadows — much richer on dark to give depth
   const shadowBase = modeConfig.shadowBase;
   const shadowAlpha = parseFloat(modeConfig.shadowAlpha);
-  root.style.setProperty('--shadow-sm', `0 2px 8px rgba(${shadowBase},${shadowAlpha * 0.7})`);
-  root.style.setProperty('--shadow-md', `0 6px 24px rgba(${shadowBase},${shadowAlpha})`);
-  root.style.setProperty('--shadow-lg', `0 16px 48px rgba(${shadowBase},${shadowAlpha * 1.4})`);
+  if (isDarkMode) {
+    root.style.setProperty('--shadow-sm', `0 2px 12px rgba(${shadowBase},${shadowAlpha * 0.6})`);
+    root.style.setProperty('--shadow-md', `0 8px 32px rgba(${shadowBase},${shadowAlpha})`);
+    root.style.setProperty('--shadow-lg', `0 20px 60px rgba(${shadowBase},${shadowAlpha * 1.3})`);
+  } else {
+    root.style.setProperty('--shadow-sm', `0 2px 8px rgba(${shadowBase},${shadowAlpha * 0.7})`);
+    root.style.setProperty('--shadow-md', `0 6px 24px rgba(${shadowBase},${shadowAlpha})`);
+    root.style.setProperty('--shadow-lg', `0 16px 48px rgba(${shadowBase},${shadowAlpha * 1.4})`);
+  }
 };
 
 function adjustBrightness(hex, percent) {

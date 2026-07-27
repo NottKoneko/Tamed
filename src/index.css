@@ -5,31 +5,34 @@
   --font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
   /* ========================================== */
-  /* ========================================== */
   /* DEFAULT THEME: Midnight Dark               */
+  /* Premium deep-space dark with soft surfaces */
   /* ========================================== */
   --color-primary: #8b5cf6;
-  --color-primary-light: rgba(139, 92, 246, 0.25);
+  --color-primary-light: rgba(139, 92, 246, 0.18);
   --color-primary-dark: #c4b5fd;
   --color-accent: #ec4899;
 
-  --color-surface: #1e1b2e;
-  --color-surface-hover: #2d2a42;
-  --color-background: #13111e;
+  /* Rich layered dark — not flat black */
+  --color-surface: rgba(30, 27, 46, 0.85);
+  --color-surface-hover: rgba(45, 42, 66, 0.9);
+  --color-background: #0f0d1a;
 
-  --color-text-main: #f8fafc;
-  --color-text-muted: #cbd5e1;
+  /* Soft warm-white text — not harsh pure white */
+  --color-text-main: #eef0f6;
+  --color-text-muted: #9da5b8;
 
-  --color-green: #10b981;
-  --color-green-light: rgba(16, 185, 129, 0.2);
-  --color-yellow: #f59e0b;
-  --color-yellow-light: rgba(245, 158, 11, 0.2);
-  --color-red: #ef4444;
-  --color-red-light: rgba(239, 68, 68, 0.2);
+  --color-green: #34d399;
+  --color-green-light: rgba(52, 211, 153, 0.15);
+  --color-yellow: #fbbf24;
+  --color-yellow-light: rgba(251, 191, 36, 0.15);
+  --color-red: #f87171;
+  --color-red-light: rgba(248, 113, 113, 0.15);
 
-  --color-border: rgba(255, 255, 255, 0.12);
+  /* Subtle glassy border — not stark white lines */
+  --color-border: rgba(255, 255, 255, 0.08);
   --gradient-hero: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-  --gradient-card: linear-gradient(135deg, #1e1b2e 0%, #13111e 100%);
+  --gradient-card: linear-gradient(160deg, rgba(42, 38, 64, 0.9) 0%, rgba(20, 17, 32, 0.95) 100%);
 
   /* Shared variables */
   --transition-speed: 0.25s;
@@ -38,10 +41,11 @@
   --border-radius-lg: 1.5rem;
   --border-radius-full: 9999px;
 
-  --shadow-sm: 0 2px 8px rgba(100, 116, 139, 0.08);
-  --shadow-md: 0 6px 24px rgba(100, 116, 139, 0.12);
-  --shadow-lg: 0 16px 48px rgba(100, 116, 139, 0.18);
-  --shadow-glow: 0 0 30px rgba(139, 92, 246, 0.25);
+  /* Richer dark-mode shadows */
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.3);
 }
 
 /* ========================================== */
@@ -108,7 +112,8 @@ html, body {
   margin: 0 auto;
   position: relative;
   background-color: var(--color-background);
-  box-shadow: 0 0 60px rgba(0, 0, 0, 0.1);
+  /* Subtle ambient edge glow on dark themes */
+  box-shadow: 0 0 80px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 /* ========================================== */
@@ -133,9 +138,11 @@ button {
   user-select: none;
 }
 
-/* Modern card */
+/* Modern card — uses glassmorphism on dark, clean flat on light */
 .card {
-  background: var(--color-surface);
+  background: var(--gradient-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--border-radius-lg);
   padding: 1.25rem;
   box-shadow: var(--shadow-md);
@@ -146,16 +153,17 @@ button {
 .card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 /* Glass Card Variation */
 .card-glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--gradient-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-radius: var(--border-radius-lg);
   padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
 }
 
