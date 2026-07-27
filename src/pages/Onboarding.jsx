@@ -33,7 +33,8 @@ export const Onboarding = () => {
   const [primaryColor, setPrimaryColor] = useState('#8b5cf6');
   const [accentColor, setAccentColor] = useState('#ec4899');
   const [praiseTerms, setPraiseTerms] = useState('Good girl!');
-  const [pairingCode, setPairingCode] = useState('');
+  const [ownerUserCode, setOwnerUserCode] = useState('Master Alex');
+  const [pairingCode, setPairingCode] = useState('849201');
   const [step, setStep] = useState(1);
   const { setUser, pairWithCode, showToast } = useAppStore();
 
@@ -49,7 +50,7 @@ export const Onboarding = () => {
   };
 
   const handlePetComplete = async () => {
-    if (!username.trim() || !pairingCode.trim()) return;
+    if (!username.trim() || !ownerUserCode.trim() || !pairingCode.trim()) return;
     try {
       const profile = await mockBackend.loginPet(
         username.trim(), 
@@ -62,9 +63,9 @@ export const Onboarding = () => {
       );
       profile.timezone = timezone;
       await setUser(profile);
-      await pairWithCode(pairingCode.trim());
+      await pairWithCode(ownerUserCode.trim(), pairingCode.trim());
     } catch (err) {
-      showToast(err.message || 'Pairing failed. Try Master#1234', 'warning');
+      showToast(err.message || 'Pairing failed. Try Master Alex with code 849201', 'warning');
     }
   };
 
@@ -372,21 +373,38 @@ export const Onboarding = () => {
             />
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block', marginBottom: '0.375rem' }}>
-              Owner Pairing Code (UID)
-            </label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="e.g. Master#1234"
-              value={pairingCode}
-              onChange={(e) => setPairingCode(e.target.value)}
-            />
-            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '0.25rem' }}>
-              Tip: Use <b>Master#1234</b> for testing mock mode!
-            </span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.3rem' }}>
+                Owner Username / UID
+              </label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Master Alex"
+                value={ownerUserCode}
+                onChange={(e) => setOwnerUserCode(e.target.value)}
+                style={{ fontSize: '0.85rem' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.3rem' }}>
+                6-Digit Pair Code
+              </label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="849201"
+                maxLength={6}
+                value={pairingCode}
+                onChange={(e) => setPairingCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                style={{ fontSize: '0.85rem', fontWeight: 700, fontFamily: 'monospace' }}
+              />
+            </div>
           </div>
+          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', display: 'block' }}>
+            🔒 For security, both Owner Username/UID (e.g. <b>Master Alex</b>) and 6-Digit Pair Code (e.g. <b>849201</b>) are required.
+          </span>
 
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <button type="button" className="btn-secondary" onClick={() => setRole(null)}>

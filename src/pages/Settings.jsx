@@ -74,7 +74,8 @@ export const Settings = () => {
   const [showUnpairModal, setShowUnpairModal] = useState(false);
 
   /* Pairing input state */
-  const [pairInput, setPairInput] = useState('');
+  const [pairUser, setPairUser] = useState('');
+  const [pairCode, setPairCode] = useState('');
 
   /* Pet Persona state */
   const [species, setSpecies] = useState(user?.pet_species || 'puppy');
@@ -85,10 +86,11 @@ export const Settings = () => {
 
   const handlePairSubmit = async (e) => {
     e.preventDefault();
-    if (!pairInput.trim()) return;
+    if (!pairUser.trim() || !pairCode.trim()) return;
     try {
-      await pairWithCode(pairInput.trim());
-      setPairInput('');
+      await pairWithCode(pairUser.trim(), pairCode.trim());
+      setPairUser('');
+      setPairCode('');
     } catch (err) {
       // Toast already handled by store
     }
@@ -390,27 +392,39 @@ export const Settings = () => {
             </div>
           </div>
 
-          {/* Form to enter Partner's Code (Shown if not paired) */}
+          {/* Form to enter Partner Credentials (Shown if not paired) */}
           {!pairing && (
             <form onSubmit={handlePairSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div>
-                <Label>Enter Partner's 6-Digit Pair Code or Username</Label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <Label>Partner Username or UID</Label>
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="e.g. 567812 or Puppy#5678"
-                    value={pairInput}
-                    onChange={(e) => setPairInput(e.target.value)}
-                    style={{ fontWeight: 700, letterSpacing: '0.05em' }}
+                    placeholder="e.g. Master Alex"
+                    value={pairUser}
+                    onChange={(e) => setPairUser(e.target.value)}
+                    style={{ fontWeight: 600 }}
                   />
-                  <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.25rem', flexShrink: 0 }} disabled={!pairInput.trim()}>
-                    <Link size={16} /> Pair
-                  </button>
+                </div>
+                <div>
+                  <Label>Partner 6-Digit Code</Label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g. 849201"
+                    maxLength={6}
+                    value={pairCode}
+                    onChange={(e) => setPairCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    style={{ fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'monospace' }}
+                  />
                 </div>
               </div>
+              <button type="submit" className="btn-primary" style={{ padding: '0.75rem' }} disabled={!pairUser.trim() || !pairCode.trim()}>
+                <Link size={16} /> Authenticate & Pair Accounts
+              </button>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                Share your 6-digit code with your partner or enter their code above to link your accounts together!
+                🔒 Both Username/UID and 6-digit Pair Code are required for account pairing security.
               </p>
             </form>
           )}

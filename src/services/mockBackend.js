@@ -247,19 +247,27 @@ class MockBackend {
   }
 
   // --- Pairings ---
-  async pairWithCode(currentUserId, targetCodeOrUid) {
+  async pairWithCode(currentUserId, targetUsernameOrUid, targetPairCode) {
     await delay();
-    const cleanCode = targetCodeOrUid.trim();
+    const cleanUser = (targetUsernameOrUid || '').trim().toLowerCase();
+    const cleanCode = (targetPairCode || '').trim();
+
     const me = db.profiles.find(p => p.id === currentUserId);
     if (!me) throw new Error("User profile not found");
 
-    // Find target by pair_code, uid, or username
-    const target = db.profiles.find(
-      p => (p.pair_code === cleanCode || p.uid === cleanCode || p.username.toLowerCase() === cleanCode.toLowerCase()) && p.id !== me.id
+    if (!cleanUser || !cleanCode) {
+      throw new Error("Both Username/UID and 6-digit Pair Code are required for secure pairing!");
+    }
+
+    // Find target profile requiring BOTH Username/UID match AND 6-digit Pair Code match
+    const target = db.profiles.find(p => 
+      (p.username.toLowerCase() === cleanUser || p.uid.toLowerCase() === cleanUser) &&
+      (p.pair_code === cleanCode || p.uid === cleanCode) &&
+      p.id !== me.id
     );
 
     if (!target) {
-      throw new Error(`Partner not found with code "${cleanCode}". Try Master#1234 or 849201!`);
+      throw new Error(`Security verification failed: Partner "${targetUsernameOrUid}" with pair code "${targetPairCode}" not found. Both must match!`);
     }
 
     const ownerId = me.role === 'owner' ? me.id : target.id;

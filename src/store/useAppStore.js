@@ -558,13 +558,13 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  pairWithCode: async (code) => {
+  pairWithCode: async (targetUsernameOrUid, targetPairCode) => {
     const { user, showToast } = get();
     try {
-      await mockBackend.pairWithCode(user.id, code);
+      await mockBackend.pairWithCode(user.id, targetUsernameOrUid, targetPairCode);
       playSound('levelUp');
       triggerConfetti();
-      showToast('Successfully paired accounts! 🎉', 'success');
+      showToast('Secure pairing complete! 🎉', 'success');
       await get().loadPairingData();
     } catch (err) {
       showToast(err.message || 'Failed to pair', 'warning');
