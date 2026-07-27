@@ -23,7 +23,10 @@ export const Home = () => {
     toggleDailyTask,
     overrideDailyTask,
     deleteDailyTask,
-    sendPraiseNote
+    sendPraiseNote,
+    pairWithCode,
+    showToast,
+    updatePetMood
   } = useAppStore();
 
   const isOwner = user?.role === 'owner';
