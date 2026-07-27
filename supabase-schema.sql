@@ -248,7 +248,7 @@ DECLARE
 BEGIN
   SELECT xp, level INTO current_xp, current_level FROM public.profiles WHERE id = p_profile_id;
   
-  current_xp := current_xp + p_amount;
+  current_xp := COALESCE(current_xp, 0) + p_amount;
   current_level := 1 + (current_xp / 100); -- Basic progression constraint: 100 XP per level
   
   UPDATE public.profiles SET xp = current_xp, level = current_level WHERE id = p_profile_id;
@@ -256,35 +256,37 @@ END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. RPC: Process calendar entry and calculate daily points
-CREATE OR REPLACE FUNCTION process_calendar_entry(p_pairing_id UUID, p_date DATE, p_status TEXT)
+CREATE OR REPLACE FUNCTION process_calendar_entry(p_pairing_id UUID, p_date DATE, p_status day_status)
 RETURNS VOID AS $func$
 DECLARE
   target_pet_id UUID;
-  existing_status TEXT;
+  existing_status day_status;
+  green_pts INT := 1;
   delta INT := 0;
 BEGIN
   SELECT pet_id INTO target_pet_id FROM public.pairings WHERE id = p_pairing_id;
+  SELECT point_value_green INTO green_pts FROM public.pairings WHERE id = p_pairing_id;
   
   SELECT status INTO existing_status FROM public.calendar_entries 
   WHERE pairing_id = p_pairing_id AND entry_date = p_date;
 
   IF FOUND THEN
-    UPDATE public.calendar_entries SET status = p_status, updated_at = NOW() 
+    UPDATE public.calendar_entries SET status = p_status, points_awarded = CASE WHEN p_status = 'green' THEN green_pts ELSE 0 END, updated_at = NOW() 
     WHERE pairing_id = p_pairing_id AND entry_date = p_date;
   ELSE
-    INSERT INTO public.calendar_entries (pairing_id, entry_date, status)
-    VALUES (p_pairing_id, p_date, p_status);
+    INSERT INTO public.calendar_entries (pairing_id, entry_date, status, points_awarded)
+    VALUES (p_pairing_id, p_date, p_status, CASE WHEN p_status = 'green' THEN green_pts ELSE 0 END);
   END IF;
 
-  -- Points handling (modify integers as needed)
-  IF p_status = 'good' AND (existing_status IS NULL OR existing_status != 'good') THEN
-    delta := 10;
-  ELSIF p_status = 'bad' AND (existing_status IS NULL OR existing_status != 'bad') THEN
-    delta := -10;
+  -- Points handling based on green status
+  IF p_status = 'green' AND (existing_status IS NULL OR existing_status != 'green') THEN
+    delta := COALESCE(green_pts, 1);
+  ELSIF p_status != 'green' AND existing_status = 'green' THEN
+    delta := -COALESCE(green_pts, 1);
   END IF;
 
-  IF delta != 0 THEN
-    UPDATE public.profiles SET points = points + delta WHERE id = target_pet_id;
+  IF delta != 0 AND target_pet_id IS NOT NULL THEN
+    UPDATE public.profiles SET points_balance = GREATEST(0, COALESCE(points_balance, 0) + delta) WHERE id = target_pet_id;
   END IF;
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -293,6 +295,6 @@ $func$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION set_pet_points(p_pet_id UUID, p_points INT)
 RETURNS VOID AS $func$
 BEGIN
-  UPDATE public.profiles SET points = p_points WHERE id = p_pet_id;
+  UPDATE public.profiles SET points_balance = GREATEST(0, p_points) WHERE id = p_pet_id;
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER;

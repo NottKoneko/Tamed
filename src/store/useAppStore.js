@@ -1,169 +1,662 @@
 import { create } from 'zustand';
-import { supabase, supabaseBackend } from '../services/supabaseClient';
+import { supabase, supabaseBackend, isSupabaseConfigured } from '../services/supabaseClient';
+import { mockBackend } from '../services/mockBackend';
+import { playSound, setSoundEnabled } from '../utils/audio';
+import { triggerConfetti } from '../utils/confetti';
+import { applyCustomTheme } from '../utils/theme';
 
 export const useAppStore = create((set, get) => ({
   session: null,
-  userId: null,
-  profile: null,
-  pairing: null,
+  user: null, 
+  profile: null, // alias for user
+  pairing: null, 
   partnerProfile: null,
-  
-  // Data
-  calendar: [],
-  tasks: [],
-  proposals: [],
-  storeItems: [],
-  redemptions: [],
+  calendarEntries: [], 
+  proposals: [],     
+  rewardItems: [],   
+  redemptions: [],   
+  dailyTasks: [],
   praiseNotes: [],
-  
-  isLoading: true,
+  activePraiseModal: null,
+  soundEnabled: true,
+  activeTab: 'home', 
+  toast: null,
+  isLoading: false,
   realtimeChannel: null,
-  
-  setSession: (session) => set({ session, userId: session?.user?.id }),
 
-  loadInitialData: async () => {
-    const { userId } = get();
-    if (!userId) {
-      set({ isLoading: false });
-      return;
+  toggleSound: () => {
+    const next = !get().soundEnabled;
+    set({ soundEnabled: next });
+    setSoundEnabled(next);
+    get().showToast(next ? 'Sound effects enabled 🔔' : 'Sound effects muted 🔕', 'info');
+  },
+
+  showToast: (message, type = 'info') => {
+    set({ toast: { message, type } });
+    setTimeout(() => {
+      set({ toast: null });
+    }, 3500);
+  },
+
+  setActiveTab: (tab) => {
+    playSound('click');
+    set({ activeTab: tab });
+  },
+
+  setActivePraiseModal: (note) => set({ activePraiseModal: note }),
+  setSession: (session) => set({ session }),
+
+  setUser: (user) => {
+    set({ user, profile: user });
+    if (user) {
+      applyCustomTheme(user);
+      get().loadPairingData();
+    } else {
+      set({ pairing: null, partnerProfile: null, calendarEntries: [], proposals: [], rewardItems: [], redemptions: [], dailyTasks: [], praiseNotes: [] });
     }
-    
+  },
+
+  // Load user & pairing data (works with Supabase when configured, or mockBackend)
+  loadPairingData: async () => {
+    const { user, session } = get();
+    const activeUserId = user?.id || session?.user?.id;
+    if (!activeUserId) return;
+
     try {
       set({ isLoading: true });
-      const profile = await supabaseBackend.getProfile(userId);
-      set({ profile });
-      
-      if (profile) {
-        const pairing = await supabaseBackend.getPairing(userId);
-        if (pairing) {
-          set({ pairing });
-          const partnerId = profile.role === 'owner' ? pairing.pet_id : pairing.owner_id;
-          const partnerProfile = await supabaseBackend.getProfile(partnerId);
-          set({ partnerProfile });
-          
-          // Load app data concurrently
-          const [calendar, tasks, proposals, storeItems, redemptions, praiseNotes] = await Promise.all([
-             supabaseBackend.getCalendarEntries(pairing.id),
-             supabaseBackend.getDailyTasks(pairing.id),
-             supabaseBackend.getProposals(pairing.id),
-             supabaseBackend.getRewardItems(pairing.id),
-             supabaseBackend.getRedemptions(pairing.id),
-             supabaseBackend.getPraiseNotes(pairing.id)
-          ]);
-          
-          set({ calendar, tasks, proposals, storeItems, redemptions, praiseNotes });
-          get().initRealtime(pairing.id);
+      let currentProfile = user;
+      let pairingData = null;
+
+      if (isSupabaseConfigured && session) {
+        currentProfile = await supabaseBackend.getProfile(activeUserId);
+        if (currentProfile) {
+          set({ user: currentProfile, profile: currentProfile });
+          applyCustomTheme(currentProfile);
+          pairingData = await supabaseBackend.getPairing(activeUserId);
         }
+      } else {
+        pairingData = await mockBackend.getPairingForUser(activeUserId);
       }
-    } catch (error) {
-      console.error("Failed loading initial data:", error);
+
+      set({ pairing: pairingData });
+
+      if (pairingData && currentProfile) {
+        const partnerId = currentProfile.role === 'owner' ? pairingData.pet_id : pairingData.owner_id;
+        
+        let partnerProfile = null;
+        let calendarEntries = [];
+        let proposals = [];
+        let rewardItems = [];
+        let redemptions = [];
+        let dailyTasks = [];
+        let praiseNotes = [];
+
+        if (isSupabaseConfigured && session) {
+          [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes] = await Promise.all([
+            supabaseBackend.getProfile(partnerId),
+            supabaseBackend.getCalendarEntries(pairingData.id),
+            supabaseBackend.getProposals(pairingData.id),
+            supabaseBackend.getRewardItems(pairingData.id),
+            supabaseBackend.getRedemptions(pairingData.id),
+            supabaseBackend.getDailyTasks(pairingData.id),
+            supabaseBackend.getPraiseNotes(pairingData.id)
+          ]);
+        } else {
+          [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes] = await Promise.all([
+            mockBackend.getProfile(partnerId),
+            mockBackend.getCalendarEntries(pairingData.id),
+            mockBackend.getProposals(pairingData.id),
+            mockBackend.getRewardItems(pairingData.id),
+            mockBackend.getRedemptions(pairingData.id),
+            mockBackend.getDailyTasks(pairingData.id),
+            mockBackend.getPraiseNotes(pairingData.id)
+          ]);
+        }
+
+        const species = currentProfile.role === 'pet' ? currentProfile.pet_species : (partnerProfile?.pet_species || 'puppy');
+        document.documentElement.setAttribute('data-theme', species || 'puppy');
+
+        set({ partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes });
+        get().setupRealtime(pairingData.id);
+      }
+    } catch (err) {
+      console.error('Error loading pairing data:', err);
     } finally {
       set({ isLoading: false });
     }
   },
 
-  createProfile: async (profileData) => {
-    const { userId } = get();
-    const newProfile = await supabaseBackend.createProfile({ ...profileData, id: userId });
-    set({ profile: newProfile });
-    return newProfile;
+  // Alias for loadPairingData used in App.jsx
+  loadInitialData: async () => {
+    await get().loadPairingData();
   },
 
-  pairWithCode: async (username, code) => {
-    const { userId } = get();
-    await supabaseBackend.pairWithCode(userId, username, code);
-    await get().loadInitialData(); // Reload everything
-  },
+  // Supabase Realtime / Mock PubSub
+  setupRealtime: (pairingId) => {
+    if (isSupabaseConfigured && supabase && pairingId) {
+      if (get().realtimeChannel) return;
 
-  initRealtime: (pairingId) => {
-    if (get().realtimeChannel) return;
+      const channel = supabase.channel(`tamed-${pairingId}`)
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          get().loadPairingData();
+        })
+        .subscribe();
 
-    const channel = supabase.channel(`tamed-${pairingId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_entries', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('calendar'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_tasks', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('tasks'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reward_proposals', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('proposals'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reward_items', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('storeItems'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('redemptions'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'praise_notes', filter: `pairing_id=eq.${pairingId}` }, () => get().refreshData('praiseNotes'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-         const { profile, partnerProfile } = get();
-         if (payload.new.id === profile?.id) set({ profile: payload.new });
-         if (payload.new.id === partnerProfile?.id) set({ partnerProfile: payload.new });
-      })
-      .subscribe();
-      
-    set({ realtimeChannel: channel });
-  },
+      set({ realtimeChannel: channel });
+    } else {
+      mockBackend.subscribe(({ event, payload }) => {
+        const { user, pairing, showToast } = get();
+        if (!user) return;
 
-  refreshData: async (type) => {
-    const { pairing } = get();
-    if (!pairing) return;
-    try {
-      if (type === 'calendar') set({ calendar: await supabaseBackend.getCalendarEntries(pairing.id) });
-      if (type === 'tasks') set({ tasks: await supabaseBackend.getDailyTasks(pairing.id) });
-      if (type === 'proposals') set({ proposals: await supabaseBackend.getProposals(pairing.id) });
-      if (type === 'storeItems') set({ storeItems: await supabaseBackend.getRewardItems(pairing.id) });
-      if (type === 'redemptions') set({ redemptions: await supabaseBackend.getRedemptions(pairing.id) });
-      if (type === 'praiseNotes') set({ praiseNotes: await supabaseBackend.getPraiseNotes(pairing.id) });
-    } catch(e) {
-      console.error(`Failed to refresh ${type}`, e);
+        if (event === 'PROFILE_UPDATED' && payload.id === user.id) {
+          if (payload.leveledUp) {
+            playSound('levelUp');
+            triggerConfetti();
+            showToast(`LEVEL UP! You reached Level ${payload.level}! 🎉`, 'success');
+          }
+          set({ user: { ...user, ...payload }, profile: { ...user, ...payload } });
+        }
+        if (pairing) get().loadPairingData();
+      });
     }
   },
 
-  // Action Methods
-  setCalendarEntry: async (date, status) => {
-    const { pairing } = get();
-    await supabaseBackend.setCalendarEntry(pairing.id, date, status);
-  },
-  
-  createDailyTask: async (taskData) => {
-    const { pairing } = get();
-    await supabaseBackend.createDailyTask({ ...taskData, pairing_id: pairing.id });
-  },
-
-  toggleDailyTask: async (taskId, isCompleted) => await supabaseBackend.toggleDailyTask(taskId, isCompleted),
-  deleteDailyTask: async (taskId) => await supabaseBackend.deleteDailyTask(taskId),
-
-  createProposal: async (title, cost) => {
-    const { pairing, profile } = get();
-    await supabaseBackend.createProposal({ pairing_id: pairing.id, pet_id: profile.id, title, cost });
+  // Quick switch between demo roles
+  quickSwitchRole: async () => {
+    playSound('click');
+    const { user } = get();
+    const targetRole = user?.role === 'owner' ? 'pet' : 'owner';
+    
+    if (targetRole === 'pet') {
+      const pet = await mockBackend.loginPet('Little Fox', 'fox', 'Good fox!');
+      await get().setUser(pet);
+    } else {
+      const owner = await mockBackend.loginOwner('Master Alex');
+      await get().setUser(owner);
+    }
+    get().showToast(`Switched view to ${targetRole.toUpperCase()}`, 'info');
   },
 
-  processProposal: async (proposalId, status) => await supabaseBackend.processProposal(proposalId, status),
-
-  createRewardItem: async (title, cost) => {
-    const { pairing } = get();
-    await supabaseBackend.createRewardItem({ pairing_id: pairing.id, title, cost });
+  // Pet Mood Update
+  updatePetMood: async (mood) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, { mood });
+      } else {
+        updated = await mockBackend.updateProfile(user.id, { mood });
+      }
+      set({ user: updated, profile: updated });
+      playSound('click');
+      showToast(`Mood set to "${mood}"!`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
   },
 
-  deleteRewardItem: async (itemId) => await supabaseBackend.deleteRewardItem(itemId),
-
-  redeemStoreItem: async (itemId, cost) => {
-    const { pairing, profile } = get();
-    await supabaseBackend.redeemStoreItem(pairing.id, profile.id, itemId, cost);
+  // Behavior Codex (Daily Tasks)
+  createDailyTask: async (title) => {
+    const { pairing, session, showToast } = get();
+    if (!pairing) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.createDailyTask(pairing.id, title);
+      } else {
+        await mockBackend.createDailyTask(pairing.id, title);
+      }
+      await get().loadPairingData();
+      playSound('click');
+      showToast(`Added task "${title}"`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
   },
 
-  processRedemption: async (redemptionId, status) => await supabaseBackend.processRedemption(redemptionId, status),
+  evaluateAutoCalendarStatus: async () => {
+    const { dailyTasks, pairing } = get();
+    if (!pairing || !dailyTasks || dailyTasks.length === 0) return;
 
-  sendPraiseNote: async (message) => {
-    const { pairing, profile } = get();
-    await supabaseBackend.sendPraiseNote({ pairing_id: pairing.id, sender_id: profile.id, message });
+    const todayStr = new Date().toISOString().split('T')[0];
+    const total = dailyTasks.length;
+    const completed = dailyTasks.filter(t => t.is_completed).length;
+
+    let targetStatus = 'red';
+    if (completed === total) {
+      targetStatus = 'green';
+    } else if (completed > 0) {
+      targetStatus = 'yellow';
+    }
+
+    try {
+      await get().setCalendarStatus(todayStr, targetStatus);
+    } catch (err) {
+      console.error("Auto calendar evaluation error:", err);
+    }
   },
 
-  setPetPoints: async (points) => {
-    const { partnerProfile } = get();
-    await supabaseBackend.setPetPoints(partnerProfile.id, points);
+  toggleDailyTask: async (taskId) => {
+    const { dailyTasks, session, showToast } = get();
+    const task = (dailyTasks || []).find(t => t.id === taskId);
+    if (!task) return;
+    const newStatus = !task.is_completed;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.toggleDailyTask(taskId, newStatus);
+      } else {
+        await mockBackend.toggleDailyTask(taskId);
+      }
+      await get().loadPairingData();
+      if (newStatus) {
+        playSound('taskComplete');
+        showToast('Task completed! +25 XP awarded 🎉', 'success');
+      }
+      await get().evaluateAutoCalendarStatus();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
   },
 
-  addXP: async (amount) => {
-    const { partnerProfile } = get();
-    await supabaseBackend.addXP(partnerProfile.id, amount);
+  overrideDailyTask: async (taskId, isCompleted = true) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.toggleDailyTask(taskId, isCompleted);
+      } else {
+        await mockBackend.overrideDailyTask(taskId, isCompleted);
+      }
+      await get().loadPairingData();
+      playSound('praise');
+      showToast(isCompleted ? 'Owner override: Task marked complete! 🟢' : 'Owner override: Task marked incomplete', 'info');
+      await get().evaluateAutoCalendarStatus();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  deleteDailyTask: async (taskId) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.deleteDailyTask(taskId);
+      } else {
+        await mockBackend.deleteDailyTask(taskId);
+      }
+      await get().loadPairingData();
+      showToast('Daily task removed', 'info');
+      await get().evaluateAutoCalendarStatus();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  // Praise Notes
+  sendPraiseNote: async (type, message) => {
+    const { pairing, user, session, showToast } = get();
+    if (!pairing) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.sendPraiseNote(pairing.id, user.id, type, message);
+      } else {
+        await mockBackend.sendPraiseNote(pairing.id, user.id, type, message);
+      }
+      await get().loadPairingData();
+      playSound('praise');
+      triggerConfetti();
+      showToast('Praise sent to your Pet! 💖', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  // Points Management
+  setPetPoints: async (newPoints) => {
+    const { pairing, partnerProfile, user, session, showToast } = get();
+    const petId = user?.role === 'pet' ? user.id : partnerProfile?.id;
+    if (!pairing || !petId) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.setPetPoints(petId, newPoints);
+      } else {
+        await mockBackend.setPetPoints(pairing.id, newPoints);
+      }
+      await get().loadPairingData();
+      playSound('click');
+      showToast(`Pet points balance updated to ${newPoints} pts`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  // Store Management
+  createRewardItem: async (name, description, pointCost) => {
+    const { pairing, session, showToast } = get();
+    if (!pairing) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.createRewardItem(pairing.id, name, description, pointCost);
+      } else {
+        await mockBackend.createRewardItem(pairing.id, name, description, pointCost);
+      }
+      await get().loadPairingData();
+      playSound('click');
+      showToast(`Added "${name}" to Reward Store!`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  deleteRewardItem: async (itemId) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.deleteRewardItem(itemId);
+      } else {
+        await mockBackend.deleteRewardItem(itemId);
+      }
+      await get().loadPairingData();
+      showToast('Reward item removed', 'info');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  submitRewardProposal: async (title, description) => {
+    const { pairing, user, session, showToast } = get();
+    if (!pairing) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.createProposal(pairing.id, user.id, title, description);
+      } else {
+        await mockBackend.createProposal(pairing.id, user.id, title, description);
+      }
+      await get().loadPairingData();
+      playSound('click');
+      showToast('Reward proposal sent to Owner!', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  processProposal: async (proposalId, status, assignedPointsCost = 0) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.processProposal(proposalId, status, assignedPointsCost);
+      } else {
+        await mockBackend.processProposal(proposalId, status, assignedPointsCost);
+      }
+      playSound(status === 'approved' ? 'praise' : 'click');
+      showToast(status === 'approved' ? `Approved & added to Store at ${assignedPointsCost} pts!` : `Proposal ${status}`, 'success');
+      await get().loadPairingData();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  redeemStoreItem: async (rewardItem) => {
+    const { pairing, user, session, showToast } = get();
+    if (!pairing || !user) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.redeemStoreItem(pairing.id, user.id, rewardItem);
+      } else {
+        await mockBackend.redeemStoreItem(pairing.id, user.id, rewardItem);
+      }
+      await get().loadPairingData();
+      playSound('click');
+      showToast(`Requested redemption for "${rewardItem.name}" (${rewardItem.point_cost} pts)! Sent to Owner for approval.`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  processRedemption: async (redemptionId, status) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.processRedemption(redemptionId, status);
+      } else {
+        await mockBackend.processRedemption(redemptionId, status);
+      }
+      playSound(status === 'approved' ? 'levelUp' : 'click');
+      if (status === 'approved') triggerConfetti();
+      showToast(status === 'approved' ? 'Redemption Approved & Fulfilled! 🎉' : 'Redemption Denied (Points refunded)', 'info');
+      await get().loadPairingData();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  setCalendarStatus: async (dateStr, status) => {
+    const { pairing, session, showToast } = get();
+    if (!pairing) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.setCalendarEntry(pairing.id, dateStr, status);
+      } else {
+        await mockBackend.setCalendarEntry(pairing.id, dateStr, status);
+      }
+      await get().loadPairingData();
+      playSound('click');
+      if (status === 'green') triggerConfetti();
+      showToast(`Marked ${dateStr} as ${status.toUpperCase()}`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updatePraiseAndSpecies: async (species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null, customThemePrimary = null, customThemeAccent = null) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      const updates = { 
+        pet_species: species, 
+        praise_terms: praiseTerms,
+        custom_species_name: customSpeciesName,
+        custom_species_icon: customSpeciesIcon
+      };
+      if (customThemePrimary) updates.custom_theme_primary = customThemePrimary;
+      if (customThemeAccent) updates.custom_theme_accent = customThemeAccent;
+
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, updates);
+      } else {
+        updated = await mockBackend.updateProfile(user.id, updates);
+      }
+      set({ user: updated, profile: updated });
+      applyCustomTheme(updated);
+      playSound('praise');
+      showToast('Profile & species settings saved!', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updateCustomTheme: async (primary, accent, mode = 'light') => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      const updates = {
+        custom_theme_primary: primary,
+        custom_theme_accent: accent,
+        custom_theme_mode: mode
+      };
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, updates);
+      } else {
+        updated = await mockBackend.updateProfile(user.id, updates);
+      }
+      set({ user: updated, profile: updated });
+      applyCustomTheme(updated);
+      playSound('praise');
+      triggerConfetti();
+      showToast('Page theme colors updated! 🎨', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updatePetNickname: async (nickname) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, { pet_nickname: nickname });
+      } else {
+        updated = await mockBackend.updateProfile(user.id, { pet_nickname: nickname });
+      }
+      set({ user: updated, profile: updated });
+      showToast('Pet nickname updated! 🐾', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updateReminderTime: async (timeStr) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, { reminder_time: timeStr });
+      } else {
+        updated = await mockBackend.updateProfile(user.id, { reminder_time: timeStr });
+      }
+      set({ user: updated, profile: updated });
+      showToast(`Daily reminder time set to ${timeStr} ⏰`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  toggleXPBar: async (show) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, { show_xp_bar: show });
+      } else {
+        updated = await mockBackend.updateProfile(user.id, { show_xp_bar: show });
+      }
+      set({ user: updated, profile: updated });
+      showToast(show ? 'XP Bar is now visible 📊' : 'XP Bar hidden 🙈', 'info');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  setPairingPin: async (pin) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, { pairing_pin: pin });
+      } else {
+        updated = await mockBackend.updateProfile(user.id, { pairing_pin: pin });
+      }
+      set({ user: updated, profile: updated });
+      showToast(pin ? 'Security PIN enabled 🔒' : 'Security PIN removed 🔓', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  verifyPin: (inputPin) => {
+    const { user } = get();
+    if (!user?.pairing_pin) return true;
+    return user.pairing_pin === inputPin;
+  },
+
+  updatePairingPointValues: async (pointValues) => {
+    const { pairing, showToast } = get();
+    if (!pairing) return;
+    try {
+      const updatedPairing = await mockBackend.updatePairingPointValues(pairing.id, pointValues);
+      set({ pairing: updatedPairing });
+      playSound('click');
+      showToast('Color point values updated!', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updatePairingCurrency: async (currencyConfig) => {
+    const { pairing, showToast } = get();
+    if (!pairing) return;
+    try {
+      const updatedPairing = await mockBackend.updatePairingCurrency(pairing.id, currencyConfig);
+      set({ pairing: updatedPairing });
+      playSound('praise');
+      triggerConfetti();
+      showToast(`Point type updated to ${currencyConfig.icon || '⭐'} ${currencyConfig.name || 'Points'}!`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updatePairingRules: async ({ maxPendingProposals, weekendMultiplier }) => {
+    const { pairing, showToast } = get();
+    if (!pairing) return;
+    try {
+      const updated = await mockBackend.updatePairingRules(pairing.id, { maxPendingProposals, weekendMultiplier });
+      set({ pairing: updated });
+      showToast('Pairing proposal limits & weekend multiplier saved! ⚙️', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  pairWithCode: async (targetUsernameOrUid, targetPairCode) => {
+    const { user, session, showToast } = get();
+    const activeUserId = user?.id || session?.user?.id;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.pairWithCode(activeUserId, targetUsernameOrUid, targetPairCode);
+      } else {
+        await mockBackend.pairWithCode(activeUserId, targetUsernameOrUid, targetPairCode);
+      }
+      playSound('levelUp');
+      triggerConfetti();
+      showToast('Secure pairing complete! 🎉', 'success');
+      await get().loadPairingData();
+    } catch (err) {
+      showToast(err.message || 'Failed to pair', 'warning');
+      throw err;
+    }
+  },
+
+  unpair: async () => {
+    const { pairing, session, showToast } = get();
+    if (!pairing) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.unpair(pairing.id);
+      } else {
+        await mockBackend.unpair(pairing.id);
+      }
+      set({ pairing: null, partnerProfile: null, calendarEntries: [], proposals: [], rewardItems: [], redemptions: [], dailyTasks: [], praiseNotes: [] });
+      showToast('Unpaired successfully.', 'info');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
     const { realtimeChannel } = get();
-    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
-    set({ session: null, userId: null, profile: null, pairing: null, partnerProfile: null, realtimeChannel: null });
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    if (realtimeChannel && supabase) {
+      supabase.removeChannel(realtimeChannel);
+    }
+    set({ session: null, user: null, profile: null, pairing: null, partnerProfile: null, realtimeChannel: null });
+    get().showToast('Logged out successfully.', 'info');
   }
 }));

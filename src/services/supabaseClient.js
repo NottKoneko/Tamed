@@ -1,29 +1,46 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Missing Supabase environment variables. Check your .env.local or Cloudflare Pages settings.");
-}
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 export const supabaseBackend = {
   // Profiles
   getProfile: async (userId) => {
+    if (!supabase) return null;
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "Row not found"
+    if (error && error.code !== 'PGRST116') throw error;
     return data;
   },
-  
+
   createProfile: async (profileData) => {
-    const { data, error } = await supabase.from('profiles').insert([profileData]).select().single();
+    if (!supabase) return null;
+    // Ensure UID & Pair Code are present
+    const uid = profileData.uid || `${profileData.username}#${Math.floor(1000 + Math.random() * 9000)}`;
+    const pair_code = profileData.pair_code || Math.floor(100000 + Math.random() * 900000).toString();
+    
+    const payload = {
+      ...profileData,
+      uid,
+      pair_code,
+      points_balance: profileData.points_balance ?? 0,
+      xp: profileData.xp ?? 0,
+      level: profileData.level ?? 1,
+      mood: profileData.mood || 'Happy'
+    };
+
+    const { data, error } = await supabase.from('profiles').insert([payload]).select().single();
     if (error) throw error;
     return data;
   },
 
   updateProfile: async (userId, updates) => {
+    if (!supabase) return null;
     const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
     if (error) throw error;
     return data;
@@ -31,30 +48,43 @@ export const supabaseBackend = {
 
   // Pairings
   pairWithCode: async (userId, username, pairCode) => {
-    const { data: partner, error: partnerError } = await supabase
+    if (!supabase) return null;
+    const cleanUser = (username || '').trim().toLowerCase();
+    const cleanCode = (pairCode || '').trim();
+
+    // Query partner by Username/UID and pair_code
+    const { data: partners, error: partnerError } = await supabase
       .from('profiles')
-      .select('id, role')
-      .eq('username', username)
-      .eq('pair_code', pairCode)
-      .single();
-      
-    if (partnerError || !partner) throw new Error("Invalid username or pair code");
+      .select('*')
+      .or(`pair_code.eq.${cleanCode},uid.eq.${cleanCode}`);
+
+    if (partnerError) throw partnerError;
+
+    const partner = (partners || []).find(p => 
+      (p.username.toLowerCase() === cleanUser || p.uid.toLowerCase() === cleanUser) && p.id !== userId
+    );
+
+    if (!partner) {
+      throw new Error(`Security verification failed: Partner "${username}" with code "${pairCode}" not found.`);
+    }
 
     const { data: currentUser, error: currentError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', userId)
       .single();
-      
+
     if (currentError) throw currentError;
-    if (currentUser.role === partner.role) throw new Error("You must pair with an account of the opposite role.");
+    if (currentUser.role === partner.role) {
+      throw new Error("You must pair with an account of the opposite role (Owner & Pet).");
+    }
 
     const owner_id = currentUser.role === 'owner' ? userId : partner.id;
     const pet_id = currentUser.role === 'pet' ? userId : partner.id;
 
     const { data: pairing, error: pairingError } = await supabase
       .from('pairings')
-      .insert([{ owner_id, pet_id }])
+      .insert([{ owner_id, pet_id, status: 'active' }])
       .select()
       .single();
 
@@ -63,29 +93,33 @@ export const supabaseBackend = {
   },
 
   unpair: async (pairingId) => {
+    if (!supabase) return true;
     const { error } = await supabase.from('pairings').delete().eq('id', pairingId);
     if (error) throw error;
     return true;
   },
-  
+
   getPairing: async (userId) => {
-     const { data, error } = await supabase
+    if (!supabase) return null;
+    const { data, error } = await supabase
       .from('pairings')
       .select('*')
       .or(`owner_id.eq.${userId},pet_id.eq.${userId}`)
       .single();
-     if (error && error.code !== 'PGRST116') throw error;
-     return data;
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
   },
 
   // Calendar
   getCalendarEntries: async (pairingId) => {
+    if (!supabase) return [];
     const { data, error } = await supabase.from('calendar_entries').select('*').eq('pairing_id', pairingId);
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   setCalendarEntry: async (pairingId, date, status) => {
+    if (!supabase) return null;
     const { data, error } = await supabase.rpc('process_calendar_entry', {
       p_pairing_id: pairingId,
       p_date: date,
@@ -97,24 +131,35 @@ export const supabaseBackend = {
 
   // Daily Tasks
   getDailyTasks: async (pairingId) => {
+    if (!supabase) return [];
     const { data, error } = await supabase.from('daily_tasks').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: true });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
-  createDailyTask: async (taskData) => {
+  createDailyTask: async (pairingId, title) => {
+    if (!supabase) return null;
+    const taskData = {
+      pairing_id: pairingId,
+      title,
+      xp_reward: 25,
+      is_completed: false,
+      task_date: new Date().toISOString().split('T')[0]
+    };
     const { data, error } = await supabase.from('daily_tasks').insert([taskData]).select().single();
     if (error) throw error;
     return data;
   },
 
   toggleDailyTask: async (taskId, isCompleted) => {
+    if (!supabase) return null;
     const { data, error } = await supabase.from('daily_tasks').update({ is_completed: isCompleted }).eq('id', taskId).select().single();
     if (error) throw error;
     return data;
   },
 
   deleteDailyTask: async (taskId) => {
+    if (!supabase) return true;
     const { error } = await supabase.from('daily_tasks').delete().eq('id', taskId);
     if (error) throw error;
     return true;
@@ -122,86 +167,147 @@ export const supabaseBackend = {
 
   // Proposals
   getProposals: async (pairingId) => {
+    if (!supabase) return [];
     const { data, error } = await supabase.from('reward_proposals').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
-  createProposal: async (proposalData) => {
+  createProposal: async (pairingId, petId, title, description = '') => {
+    if (!supabase) return null;
+    const proposalData = {
+      pairing_id: pairingId,
+      requested_by: petId,
+      title,
+      description,
+      assigned_points: 0,
+      status: 'pending'
+    };
     const { data, error } = await supabase.from('reward_proposals').insert([proposalData]).select().single();
     if (error) throw error;
     return data;
   },
 
-  processProposal: async (proposalId, status) => {
-    const { data, error } = await supabase.from('reward_proposals').update({ status }).eq('id', proposalId).select().single();
+  processProposal: async (proposalId, status, assignedPointsCost = 0) => {
+    if (!supabase) return null;
+    const cost = parseInt(assignedPointsCost, 10) || 0;
+    const { data: prop, error } = await supabase.from('reward_proposals').update({ status, assigned_points: cost }).eq('id', proposalId).select().single();
     if (error) throw error;
-    return data;
+
+    if (status === 'approved' && prop) {
+      await supabase.from('reward_items').insert([{
+        pairing_id: prop.pairing_id,
+        name: prop.title,
+        description: prop.description || '',
+        point_cost: cost
+      }]);
+    }
+    return prop;
   },
 
-  // Store & Redemptions
+  // Store Items & Redemptions
   getRewardItems: async (pairingId) => {
+    if (!supabase) return [];
     const { data, error } = await supabase.from('reward_items').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
-  createRewardItem: async (itemData) => {
+  createRewardItem: async (pairingId, name, description, pointCost) => {
+    if (!supabase) return null;
+    const itemData = {
+      pairing_id: pairingId,
+      name,
+      description: description || '',
+      point_cost: parseInt(pointCost, 10) || 0
+    };
     const { data, error } = await supabase.from('reward_items').insert([itemData]).select().single();
     if (error) throw error;
     return data;
   },
 
   deleteRewardItem: async (itemId) => {
+    if (!supabase) return true;
     const { error } = await supabase.from('reward_items').delete().eq('id', itemId);
     if (error) throw error;
     return true;
   },
 
   getRedemptions: async (pairingId) => {
+    if (!supabase) return [];
     const { data, error } = await supabase.from('redemptions').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
-  redeemStoreItem: async (pairingId, petId, itemId, cost) => {
-    const { data: petProfile } = await supabase.from('profiles').select('points').eq('id', petId).single();
-    if (petProfile.points < cost) throw new Error("Not enough points!");
+  redeemStoreItem: async (pairingId, petId, rewardItem) => {
+    if (!supabase) return null;
+    const { data: petProfile } = await supabase.from('profiles').select('points_balance').eq('id', petId).single();
+    const balance = petProfile?.points_balance || 0;
+    if (balance < rewardItem.point_cost) {
+      throw new Error(`You need ${rewardItem.point_cost} pts, but only have ${balance} pts!`);
+    }
 
-    await supabase.from('profiles').update({ points: petProfile.points - cost }).eq('id', petId);
-    const { data, error } = await supabase.from('redemptions').insert([{ pairing_id: pairingId, reward_item_id: itemId, status: 'pending' }]).select().single();
+    // Deduct points balance
+    await supabase.from('profiles').update({ points_balance: balance - rewardItem.point_cost }).eq('id', petId);
+    
+    const { data, error } = await supabase.from('redemptions').insert([{ 
+      pairing_id: pairingId, 
+      reward_id: rewardItem.id,
+      pet_id: petId,
+      title: rewardItem.name,
+      points_spent: rewardItem.point_cost,
+      status: 'pending' 
+    }]).select().single();
     
     if (error) throw error;
     return data;
   },
 
   processRedemption: async (redemptionId, status) => {
-     const { data, error } = await supabase.from('redemptions').update({ status }).eq('id', redemptionId).select().single();
-     if (error) throw error;
-     return data;
+    if (!supabase) return null;
+    const { data: redemption, error } = await supabase.from('redemptions').update({ status }).eq('id', redemptionId).select().single();
+    if (error) throw error;
+
+    if (status === 'denied' && redemption) {
+      const { data: petProfile } = await supabase.from('profiles').select('points_balance').eq('id', redemption.pet_id).single();
+      if (petProfile) {
+        await supabase.from('profiles').update({ points_balance: (petProfile.points_balance || 0) + redemption.points_spent }).eq('id', redemption.pet_id);
+      }
+    }
+    return redemption;
   },
 
   // Praise Notes
   getPraiseNotes: async (pairingId) => {
-     const { data, error } = await supabase.from('praise_notes').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: false });
-     if (error) throw error;
-     return data;
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('praise_notes').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   },
-  
-  sendPraiseNote: async (noteData) => {
-    const { data, error } = await supabase.from('praise_notes').insert([noteData]).select().single();
+
+  sendPraiseNote: async (pairingId, senderId, type, message) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('praise_notes').insert([{
+      pairing_id: pairingId,
+      sender_id: senderId,
+      type: type || 'headpat',
+      message
+    }]).select().single();
     if (error) throw error;
     return data;
   },
 
   // Core Mechanics
   setPetPoints: async (petId, points) => {
+    if (!supabase) return null;
     const { data, error } = await supabase.rpc('set_pet_points', { p_pet_id: petId, p_points: points });
     if (error) throw error;
     return data;
   },
-  
+
   addXP: async (petId, amount) => {
+    if (!supabase) return null;
     const { data, error } = await supabase.rpc('add_xp', { p_profile_id: petId, p_amount: amount });
     if (error) throw error;
     return data;
