@@ -395,9 +395,9 @@ export const Settings = () => {
           {/* Form to enter Partner Credentials (Shown if not paired) */}
           {!pairing && (
             <form onSubmit={handlePairSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', alignItems: 'end' }}>
                 <div>
-                  <Label>Partner Username or UID</Label>
+                  <Label style={{ minHeight: '1.8rem', display: 'flex', alignItems: 'flex-end' }}>Partner Username or UID</Label>
                   <input
                     type="text"
                     className="input-field"
@@ -408,7 +408,7 @@ export const Settings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Partner 6-Digit Code</Label>
+                  <Label style={{ minHeight: '1.8rem', display: 'flex', alignItems: 'flex-end' }}>Partner 6-Digit Code</Label>
                   <input
                     type="text"
                     className="input-field"
@@ -625,9 +625,9 @@ export const Settings = () => {
           accentColor="#ec4899"
         >
           <form onSubmit={handleSavePairingRules} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', alignItems: 'start' }}>
               <div>
-                <Label>Max Pending Proposals</Label>
+                <Label style={{ minHeight: '1.8rem', display: 'flex', alignItems: 'flex-end' }}>Max Pending Proposals</Label>
                 <input
                   type="number"
                   min="1" max="10"
@@ -636,7 +636,7 @@ export const Settings = () => {
                   onChange={(e) => setMaxProposalsInput(e.target.value)}
                   style={{ textAlign: 'center', fontWeight: 700 }}
                 />
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block', minHeight: '1.8rem' }}>
                   Limit pending requests per pet (1-10)
                 </span>
               </div>
