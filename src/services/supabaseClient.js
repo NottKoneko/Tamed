@@ -399,5 +399,12 @@ export const supabaseBackend = {
       if (error) throw error;
       return data;
     }, 400);
+  },
+
+  verifySecurityPin: async (userId, pin) => {
+    if (!supabase) return { success: true, locked: false };
+    const { data, error } = await supabase.rpc('verify_security_pin', { p_user_id: userId, p_pin: pin });
+    if (error) throw error;
+    return data;
   }
 };

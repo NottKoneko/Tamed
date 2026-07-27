@@ -20,19 +20,24 @@ export const PinModal = ({ isOpen, title = 'Security Verification', onVerify, on
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (pin.length !== 4) {
       setError('Please enter a 4-digit PIN');
       return;
     }
-    const success = onVerify(pin);
-    if (!success) {
-      setError('Incorrect Security PIN code');
+    try {
+      const result = await onVerify(pin);
+      if (result === false || (result && typeof result === 'object' && result.success === false)) {
+        setError((typeof result === 'object' && result.message) ? result.message : 'Incorrect Security PIN code');
+        setPin('');
+      } else {
+        setPin('');
+        setError('');
+      }
+    } catch (err) {
+      setError(err.message || 'Verification error');
       setPin('');
-    } else {
-      setPin('');
-      setError('');
     }
   };
 

@@ -4,6 +4,8 @@ import { mockBackend } from '../services/mockBackend';
 import { playSound, setSoundEnabled } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import { applyCustomTheme } from '../utils/theme';
+import { checkRateLimit } from '../utils/rateLimiter';
+import { sanitizeText, clampInput } from '../utils/sanitizer';
 
 export const useAppStore = create((set, get) => ({
   session: null,
@@ -632,10 +634,30 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  verifyPin: (inputPin) => {
-    const { user } = get();
-    if (!user?.pairing_pin) return true;
-    return user.pairing_pin === inputPin;
+  verifyPin: async (inputPin) => {
+    const { user, session } = get();
+    if (!user?.pairing_pin) return { success: true, locked: false };
+
+    // Rate limit client check
+    const rateCheck = checkRateLimit(`pin:${user.id}`, 5, 60000);
+    if (!rateCheck.allowed) {
+      return {
+        success: false,
+        locked: true,
+        message: `Too many PIN attempts. Please wait ${rateCheck.retryAfterSeconds}s.`
+      };
+    }
+
+    if (isSupabaseConfigured && session) {
+      return await supabaseBackend.verifySecurityPin(user.id, inputPin);
+    } else {
+      const isMatch = user.pairing_pin === inputPin;
+      return {
+        success: isMatch,
+        locked: false,
+        message: isMatch ? '' : 'Incorrect Security PIN code'
+      };
+    }
   },
 
   updatePairingPointValues: async (pointValues) => {
@@ -695,6 +717,15 @@ export const useAppStore = create((set, get) => ({
   pairWithCode: async (targetUsernameOrUid, targetPairCode) => {
     const { user, session, showToast } = get();
     const activeUserId = user?.id || session?.user?.id;
+
+    // Rate limit pairing attempts
+    const rateCheck = checkRateLimit(`pair:${activeUserId}`, 5, 60000);
+    if (!rateCheck.allowed) {
+      const msg = `Rate limit exceeded. Please wait ${rateCheck.retryAfterSeconds} seconds before trying again.`;
+      showToast(msg, 'warning');
+      throw new Error(msg);
+    }
+
     try {
       if (isSupabaseConfigured && session) {
         await supabaseBackend.pairWithCode(activeUserId, targetUsernameOrUid, targetPairCode);

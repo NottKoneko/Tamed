@@ -12,24 +12,27 @@ CREATE TYPE redemption_status AS ENUM ('pending', 'approved', 'denied');
 CREATE TYPE praise_type AS ENUM ('headpat', 'treat', 'note');
 
 -- 2. PROFILES TABLE (Includes XP, Level, Mood, Custom Species & Custom Theme Logic)
+-- 2. PROFILES TABLE (Includes XP, Level, Mood, Custom Species & Custom Theme Logic)
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   uid TEXT UNIQUE NOT NULL, -- e.g., 'Username#9021'
   pair_code TEXT UNIQUE,   -- 6-digit pairing PIN code (e.g. '849201')
   role user_role NOT NULL,
-  username TEXT NOT NULL,
+  username TEXT NOT NULL CHECK (char_length(username) <= 50),
   pet_species pet_species, -- Only relevant for pets
-  custom_species_name TEXT, -- e.g., 'Bunny', 'Dragon', 'Panda'
+  custom_species_name TEXT CHECK (custom_species_name IS NULL OR char_length(custom_species_name) <= 50),
   custom_species_icon TEXT, -- e.g., '🐰', '🐲', '🐼'
-  pet_nickname TEXT,       -- Custom pet nickname e.g. 'Princess Fluff'
+  pet_nickname TEXT CHECK (pet_nickname IS NULL OR char_length(pet_nickname) <= 50),
   custom_theme_primary TEXT DEFAULT '#8b5cf6', -- Primary accent color (HEX)
   custom_theme_accent TEXT DEFAULT '#ec4899',  -- Secondary accent color (HEX)
   custom_theme_mode TEXT DEFAULT 'light',      -- 'light', 'dark', 'pastel'
-  praise_terms TEXT,       -- Custom praise text
+  praise_terms TEXT CHECK (praise_terms IS NULL OR char_length(praise_terms) <= 200),
   timezone TEXT DEFAULT 'America/Los_Angeles', -- User active timezone
   reminder_time TEXT DEFAULT '21:00', -- Daily check-in reminder time (HH:MM)
   show_xp_bar BOOLEAN DEFAULT TRUE,   -- Toggle visibility of XP progress bar
   pairing_pin TEXT DEFAULT NULL,      -- 4-digit security PIN for sensitive actions
+  failed_pin_attempts INTEGER DEFAULT 0, -- Track failed security PIN attempts
+  locked_until TIMESTAMPTZ DEFAULT NULL, -- Database-level PIN brute-force lockout timestamp
   points_balance INTEGER DEFAULT 0,
   xp INTEGER DEFAULT 0,
   level INTEGER DEFAULT 1,
@@ -50,8 +53,8 @@ CREATE TABLE public.pairings (
   point_value_red INTEGER DEFAULT 0,
   max_pending_proposals INTEGER DEFAULT 3, -- Max pending proposals allowed per pet
   weekend_multiplier NUMERIC DEFAULT 1.0,  -- Weekend point multiplier (e.g. 1.0, 1.5, 2.0)
-  custom_currency_name TEXT,     -- e.g. 'Berries', 'Cookies'
-  custom_currency_singular TEXT, -- e.g. 'Berry', 'Cookie'
+  custom_currency_name TEXT CHECK (custom_currency_name IS NULL OR char_length(custom_currency_name) <= 50),
+  custom_currency_singular TEXT CHECK (custom_currency_singular IS NULL OR char_length(custom_currency_singular) <= 50),
   custom_currency_icon TEXT,     -- e.g. '🫐', '🍪'
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -66,7 +69,7 @@ CREATE TABLE public.calendar_entries (
   entry_date DATE NOT NULL,
   status day_status DEFAULT 'none',
   points_awarded INTEGER DEFAULT 0, -- Preserves historical points value at time of logging
-  notes TEXT,
+  notes TEXT CHECK (notes IS NULL OR char_length(notes) <= 1000),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(pairing_id, entry_date)
@@ -78,8 +81,8 @@ CREATE TABLE public.reward_proposals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   pairing_id UUID REFERENCES public.pairings(id) ON DELETE CASCADE,
   requested_by UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
+  title TEXT NOT NULL CHECK (char_length(title) <= 150),
+  description TEXT CHECK (description IS NULL OR char_length(description) <= 1000),
   assigned_points INTEGER CHECK (assigned_points >= 0),
   status proposal_status DEFAULT 'pending',
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -90,8 +93,8 @@ ALTER TABLE public.reward_proposals ENABLE ROW LEVEL SECURITY;
 CREATE TABLE public.reward_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   pairing_id UUID REFERENCES public.pairings(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
+  name TEXT NOT NULL CHECK (char_length(name) <= 150),
+  description TEXT CHECK (description IS NULL OR char_length(description) <= 1000),
   point_cost INTEGER NOT NULL CHECK (point_cost >= 0),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -103,7 +106,7 @@ CREATE TABLE public.redemptions (
   pairing_id UUID REFERENCES public.pairings(id) ON DELETE CASCADE,
   reward_id UUID REFERENCES public.reward_items(id) ON DELETE SET NULL,
   pet_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
+  title TEXT NOT NULL CHECK (char_length(title) <= 150),
   points_spent INTEGER NOT NULL CHECK (points_spent >= 0),
   status redemption_status DEFAULT 'pending',
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -114,7 +117,7 @@ ALTER TABLE public.redemptions ENABLE ROW LEVEL SECURITY;
 CREATE TABLE public.daily_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   pairing_id UUID REFERENCES public.pairings(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
+  title TEXT NOT NULL CHECK (char_length(title) <= 200),
   xp_reward INTEGER DEFAULT 25,
   is_completed BOOLEAN DEFAULT false,
   task_date DATE DEFAULT CURRENT_DATE,
@@ -128,7 +131,7 @@ CREATE TABLE public.praise_notes (
   pairing_id UUID REFERENCES public.pairings(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   type praise_type DEFAULT 'headpat',
-  message TEXT NOT NULL,
+  message TEXT NOT NULL CHECK (char_length(message) <= 1000),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE public.praise_notes ENABLE ROW LEVEL SECURITY;
@@ -302,5 +305,71 @@ CREATE OR REPLACE FUNCTION set_pet_points(p_pet_id UUID, p_points INT)
 RETURNS VOID AS $func$
 BEGIN
   UPDATE public.profiles SET points_balance = GREATEST(0, p_points) WHERE id = p_pet_id;
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. RPC: Verify Security PIN with Native Postgres Brute-Force Rate Limiting & Lockout
+CREATE OR REPLACE FUNCTION verify_security_pin(p_user_id UUID, p_pin TEXT)
+RETURNS JSONB AS $func$
+DECLARE
+  stored_pin TEXT;
+  attempts INT;
+  lock_until TIMESTAMPTZ;
+BEGIN
+  SELECT pairing_pin, COALESCE(failed_pin_attempts, 0), locked_until 
+  INTO stored_pin, attempts, lock_until 
+  FROM public.profiles 
+  WHERE id = p_user_id;
+
+  -- 1. Check if user is currently locked out
+  IF lock_until IS NOT NULL AND lock_until > NOW() THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'locked', true, 
+      'message', 'PIN attempts locked. Try again after ' || to_char(lock_until, 'HH24:MI:SS UTC')
+    );
+  END IF;
+
+  -- 2. If PIN is not set, allow action by default
+  IF stored_pin IS NULL OR stored_pin = '' THEN
+    RETURN jsonb_build_object('success', true, 'locked', false);
+  END IF;
+
+  -- 3. Check matching PIN
+  IF stored_pin = p_pin THEN
+    -- Reset failed attempts on success
+    UPDATE public.profiles 
+    SET failed_pin_attempts = 0, locked_until = NULL 
+    WHERE id = p_user_id;
+
+    RETURN jsonb_build_object('success', true, 'locked', false);
+  ELSE
+    attempts := attempts + 1;
+
+    -- Trigger 15 minute lockout on 5 consecutive failures
+    IF attempts >= 5 THEN
+      lock_until := NOW() + INTERVAL '15 minutes';
+      UPDATE public.profiles 
+      SET failed_pin_attempts = attempts, locked_until = lock_until 
+      WHERE id = p_user_id;
+
+      RETURN jsonb_build_object(
+        'success', false, 
+        'locked', true, 
+        'message', 'Too many failed PIN attempts. Security locked for 15 minutes.'
+      );
+    ELSE
+      UPDATE public.profiles 
+      SET failed_pin_attempts = attempts 
+      WHERE id = p_user_id;
+
+      RETURN jsonb_build_object(
+        'success', false, 
+        'locked', false, 
+        'attempts_remaining', (5 - attempts),
+        'message', 'Incorrect Security PIN code. ' || (5 - attempts) || ' attempts remaining.'
+      );
+    END IF;
+  END IF;
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER;
