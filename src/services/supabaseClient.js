@@ -316,7 +316,7 @@ export const supabaseBackend = {
   // Pairings
   pairWithCode: async (currentUserId, targetUsernameOrUid, targetPairCode) => {
     if (!supabase) return null;
-    const cleanUser = (targetUsernameOrUid || '').trim();
+    const cleanUser = (targetUsernameOrUid || '').trim().toLowerCase();
     const cleanCode = (targetPairCode || '').trim();
 
     if (!cleanUser || !cleanCode) {
@@ -330,25 +330,27 @@ export const supabaseBackend = {
       .eq('id', currentUserId)
       .single();
 
-    if (meError || !me) throw new Error("Your user profile was not found.");
+    if (meError || !me) throw new Error("Your user profile was not found. Please try logging out and in again.");
 
-    // Fetch target profile matching EITHER username OR uid AND pair_code
-    const { data: targets, error: targetError } = await supabase
+    // Fetch all profiles to find matching partner without query syntax failures
+    const { data: profiles, error: targetError } = await supabase
       .from('profiles')
-      .select('*')
-      .or(`username.ilike.${cleanUser},uid.ilike.${cleanUser}`)
-      .eq('pair_code', cleanCode);
+      .select('*');
 
     if (targetError) throw targetError;
 
-    const target = (targets || []).find(p => p.id !== me.id);
+    const target = (profiles || []).find(p => 
+      p.id !== me.id &&
+      (p.username.toLowerCase() === cleanUser || p.uid.toLowerCase() === cleanUser) &&
+      (p.pair_code === cleanCode || p.uid.toLowerCase() === cleanCode)
+    );
 
     if (!target) {
-      throw new Error(`Partner "${cleanUser}" with pair code "${cleanCode}" was not found. Please verify credentials.`);
+      throw new Error(`Partner "${targetUsernameOrUid}" with pair code "${targetPairCode}" not found. Please verify their Username/UID and 6-digit Pair Code.`);
     }
 
     if (me.role === target.role) {
-      throw new Error(`Pairing requires one Owner and one Pet role. Both accounts currently have the "${me.role}" role.`);
+      throw new Error(`Pairing requires one Owner and one Pet role. Both your account and ${target.username}'s account currently have the "${me.role}" role.`);
     }
 
     const ownerId = me.role === 'owner' ? me.id : target.id;
@@ -357,8 +359,7 @@ export const supabaseBackend = {
     // Check existing pairing
     const { data: existingPairings } = await supabase
       .from('pairings')
-      .select('*')
-      .or(`owner_id.eq.${ownerId},pet_id.eq.${ownerId}`);
+      .select('*');
 
     const existing = (existingPairings || []).find(p => p.owner_id === ownerId && p.pet_id === petId);
 

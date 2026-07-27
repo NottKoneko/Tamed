@@ -197,13 +197,13 @@ export const Home = () => {
                   onChange={(e) => setHomePairUser(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '0.55rem 0.75rem',
+                    padding: '0.6rem 0.75rem',
                     borderRadius: 'var(--border-radius)',
-                    border: '1px solid rgba(255, 255, 255, 0.4)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    color: 'var(--color-text-main)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+                    color: '#ffffff',
                     fontWeight: 600,
-                    fontSize: '0.825rem',
+                    fontSize: '0.85rem',
                     outline: 'none'
                   }}
                 />
@@ -222,15 +222,15 @@ export const Home = () => {
                   onChange={(e) => setHomePairCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   style={{
                     width: '100%',
-                    padding: '0.55rem 0.75rem',
+                    padding: '0.6rem 0.75rem',
                     borderRadius: 'var(--border-radius)',
-                    border: '1px solid rgba(255, 255, 255, 0.4)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    color: 'var(--color-text-main)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+                    color: '#ffffff',
                     fontWeight: 700,
                     letterSpacing: '0.1em',
                     fontFamily: 'monospace',
-                    fontSize: '0.825rem',
+                    fontSize: '0.85rem',
                     outline: 'none'
                   }}
                 />
