@@ -229,7 +229,10 @@ button {
 .page-container {
   flex: 1;
   padding: 1.25rem;
-  padding-bottom: 8.5rem;
+  padding-top: max(3.5rem, calc(env(safe-area-inset-top) + 1.25rem));
+  padding-bottom: max(9.5rem, calc(8.5rem + env(safe-area-inset-bottom)));
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
