@@ -1,6 +1,6 @@
 /**
  * Full-Page Custom Theme Engine
- * Applies custom accent colors and environment modes across the entire app.
+ * Applies custom accent colors and environment modes across the entire app with optimal contrast.
  */
 
 export const THEME_MODES = {
@@ -11,10 +11,10 @@ export const THEME_MODES = {
     surface: '#1e1b2e',
     surfaceHover: '#2d2a42',
     textMain: '#f8fafc',
-    textMuted: '#94a3b8',
-    border: 'rgba(255,255,255,0.08)',
+    textMuted: '#cbd5e1',
+    border: 'rgba(255, 255, 255, 0.12)',
     shadowBase: '0,0,0',
-    shadowAlpha: '0.35'
+    shadowAlpha: '0.40'
   },
   dark2: {
     id: 'dark2',
@@ -22,11 +22,11 @@ export const THEME_MODES = {
     background: '#09090b',
     surface: '#18181b',
     surfaceHover: '#27272a',
-    textMain: '#fafafa',
-    textMuted: '#a1a1aa',
-    border: 'rgba(255,255,255,0.06)',
+    textMain: '#ffffff',
+    textMuted: '#e2e8f0',
+    border: 'rgba(255, 255, 255, 0.14)',
     shadowBase: '0,0,0',
-    shadowAlpha: '0.45'
+    shadowAlpha: '0.60'
   },
   light: {
     id: 'light',
@@ -57,7 +57,7 @@ export const THEME_MODES = {
 export const applyCustomTheme = (profile) => {
   const root = document.documentElement;
 
-  // Clear any inline styles first so preset CSS themes can take effect cleanly
+  // Clear previous inline styles so base resets apply cleanly
   root.style.cssText = '';
 
   const species = profile?.pet_species || 'custom';
@@ -65,26 +65,52 @@ export const applyCustomTheme = (profile) => {
 
   const customPrimary = profile?.custom_theme_primary;
   const customAccent = profile?.custom_theme_accent;
-  const customMode = profile?.custom_theme_mode;
+  const customMode = profile?.custom_theme_mode || 'dark';
 
-  // Only apply custom overrides if the user has explicitly configured them
-  if (!customPrimary && !customAccent && !customMode) return;
+  const modeConfig = THEME_MODES[customMode] || THEME_MODES.dark;
+  const isDarkMode = customMode === 'dark' || customMode === 'dark2';
 
-  const primary = customPrimary || '#8b5cf6';
-  const accent = customAccent || '#ec4899';
-  const modeConfig = THEME_MODES[customMode] || THEME_MODES.light;
-  const shadowBase = modeConfig.shadowBase;
-  const shadowAlpha = parseFloat(modeConfig.shadowAlpha);
+  // Determine primary & accent color fallbacks based on species
+  let primary = customPrimary;
+  let accent = customAccent;
 
-  // Accent colors
+  if (!primary) {
+    if (species === 'puppy') primary = '#ec4899';
+    else if (species === 'kitty') primary = '#6366f1';
+    else if (species === 'fox') primary = '#ea580c';
+    else primary = '#8b5cf6';
+  }
+
+  if (!accent) {
+    if (species === 'puppy') accent = '#a855f7';
+    else if (species === 'kitty') accent = '#a855f7';
+    else if (species === 'fox') accent = '#d97706';
+    else accent = '#ec4899';
+  }
+
+  // Set Accent Colors
   root.style.setProperty('--color-primary', primary);
-  root.style.setProperty('--color-primary-dark', adjustBrightness(primary, -22));
-  root.style.setProperty('--color-primary-light', adjustBrightness(primary, 35));
   root.style.setProperty('--color-accent', accent);
   root.style.setProperty('--gradient-hero', `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`);
   root.style.setProperty('--shadow-glow', `0 0 32px ${primary}50`);
 
-  // Full-page environment
+  // High contrast adjustments for dark vs light modes
+  if (isDarkMode) {
+    // In dark mode, primary-dark must be brightened for crisp, high-contrast headings & badges!
+    root.style.setProperty('--color-primary-dark', adjustBrightness(primary, 30));
+    root.style.setProperty('--color-primary-light', `${primary}35`);
+    root.style.setProperty('--color-green-light', 'rgba(16, 185, 129, 0.22)');
+    root.style.setProperty('--color-yellow-light', 'rgba(245, 158, 11, 0.22)');
+    root.style.setProperty('--color-red-light', 'rgba(239, 68, 68, 0.22)');
+  } else {
+    root.style.setProperty('--color-primary-dark', adjustBrightness(primary, -22));
+    root.style.setProperty('--color-primary-light', `${primary}18`);
+    root.style.setProperty('--color-green-light', '#d1fae5');
+    root.style.setProperty('--color-yellow-light', '#fef3c7');
+    root.style.setProperty('--color-red-light', '#fee2e2');
+  }
+
+  // Full-page environment mode variables
   root.style.setProperty('--color-background', modeConfig.background);
   root.style.setProperty('--color-surface', modeConfig.surface);
   root.style.setProperty('--color-surface-hover', modeConfig.surfaceHover);
@@ -93,7 +119,9 @@ export const applyCustomTheme = (profile) => {
   root.style.setProperty('--color-border', modeConfig.border);
   root.style.setProperty('--gradient-card', `linear-gradient(135deg, ${modeConfig.surface} 0%, ${modeConfig.background} 100%)`);
 
-  // Adjusted shadows for environment
+  // Environment shadows
+  const shadowBase = modeConfig.shadowBase;
+  const shadowAlpha = parseFloat(modeConfig.shadowAlpha);
   root.style.setProperty('--shadow-sm', `0 2px 8px rgba(${shadowBase},${shadowAlpha * 0.7})`);
   root.style.setProperty('--shadow-md', `0 6px 24px rgba(${shadowBase},${shadowAlpha})`);
   root.style.setProperty('--shadow-lg', `0 16px 48px rgba(${shadowBase},${shadowAlpha * 1.4})`);

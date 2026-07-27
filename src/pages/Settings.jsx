@@ -108,7 +108,7 @@ export const Settings = () => {
   /* Theme state */
   const [pagePrimary, setPagePrimary] = useState(user?.custom_theme_primary || '#8b5cf6');
   const [pageAccent, setPageAccent] = useState(user?.custom_theme_accent || '#ec4899');
-  const [pageThemeMode, setPageThemeMode] = useState(user?.custom_theme_mode || 'light');
+  const [pageThemeMode, setPageThemeMode] = useState(user?.custom_theme_mode || 'dark');
 
   /* Owner point values & rules */
   const [greenPoints, setGreenPoints] = useState(pairing?.point_value_green ?? 1);
@@ -512,7 +512,7 @@ export const Settings = () => {
         subtitle="Customize your entire app environment"
         accentColor="var(--color-primary)"
       >
-        <form onSubmit={handleSavePageTheme} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
           <div>
             <Label>Environment Mode</Label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -522,7 +522,10 @@ export const Settings = () => {
                   <button
                     key={mode.id}
                     type="button"
-                    onClick={() => setPageThemeMode(mode.id)}
+                    onClick={() => {
+                      setPageThemeMode(mode.id);
+                      updateCustomTheme(pagePrimary, pageAccent, mode.id);
+                    }}
                     style={{
                       padding: '0.75rem',
                       borderRadius: 'var(--border-radius)',
@@ -550,7 +553,11 @@ export const Settings = () => {
                 <button
                   key={p.label}
                   type="button"
-                  onClick={() => { setPagePrimary(p.primary); setPageAccent(p.accent); }}
+                  onClick={() => {
+                    setPagePrimary(p.primary);
+                    setPageAccent(p.accent);
+                    updateCustomTheme(p.primary, p.accent, pageThemeMode);
+                  }}
                   style={chipStyle(pagePrimary === p.primary)}
                 >
                   <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: p.primary, flexShrink: 0 }} />
@@ -574,21 +581,39 @@ export const Settings = () => {
                     backgroundColor: value, boxShadow: `0 0 0 3px var(--color-surface), 0 0 0 5px ${value}60`,
                     overflow: 'hidden', display: 'block'
                   }}>
-                    <input type="color" value={value} onChange={e => set(e.target.value)}
-                      style={{ opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
+                    <input
+                      type="color"
+                      value={value}
+                      onChange={e => {
+                        const val = e.target.value;
+                        set(val);
+                        const nextPrim = label === 'Primary' ? val : pagePrimary;
+                        const nextAcc = label === 'Accent' ? val : pageAccent;
+                        updateCustomTheme(nextPrim, nextAcc, pageThemeMode);
+                      }}
+                      style={{ opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                    />
                   </label>
-                  <input type="text" className="input-field" value={value}
-                    onChange={e => set(e.target.value)}
-                    style={{ fontSize: '0.8rem', padding: '0.55rem 0.75rem', fontFamily: 'monospace' }} />
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={value}
+                    onChange={e => {
+                      const val = e.target.value;
+                      set(val);
+                      if (val.startsWith('#') && (val.length === 4 || val.length === 7)) {
+                        const nextPrim = label === 'Primary' ? val : pagePrimary;
+                        const nextAcc = label === 'Accent' ? val : pageAccent;
+                        updateCustomTheme(nextPrim, nextAcc, pageThemeMode);
+                      }
+                    }}
+                    style={{ fontSize: '0.8rem', padding: '0.55rem 0.75rem', fontFamily: 'monospace' }}
+                  />
                 </div>
               </div>
             ))}
           </div>
-
-          <button type="submit" className="btn-primary">
-            <Check size={16} /> Apply Theme
-          </button>
-        </form>
+        </div>
       </Section>
 
       {/* ── OWNER: Proposal Limits & Weekend Multiplier ───────── */}

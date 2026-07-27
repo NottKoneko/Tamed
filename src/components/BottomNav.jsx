@@ -20,16 +20,16 @@ export const BottomNav = () => {
       transform: 'translateX(-50%)',
       width: 'calc(100% - 2rem)',
       maxWidth: '480px',
-      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+      backgroundColor: 'var(--color-surface)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255, 255, 255, 0.6)',
+      border: '1.5px solid var(--color-border)',
       borderRadius: 'var(--border-radius-full)',
       display: 'flex',
-      justify: 'space-around',
+      justifyContent: 'space-around',
       alignItems: 'center',
       padding: '0.5rem 0.75rem',
-      boxShadow: '0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04)',
+      boxShadow: 'var(--shadow-lg)',
       zIndex: 900
     }}>
       {navItems.map((item) => {
