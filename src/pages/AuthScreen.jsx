@@ -119,15 +119,13 @@ export default function AuthScreen() {
         });
 
         if (signUpError) {
-          // Smart Fallback: If account was created on previous attempt or rate limited, attempt instant sign in!
-          if (signUpError.message?.includes('rate_limit') || signUpError.message?.includes('already registered') || signUpError.message?.includes('exceeded')) {
-            const { error: autoSignInError } = await supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password: cleanPass
-            });
-            if (!autoSignInError) {
-              return; // Auto-login succeeded!
-            }
+          // Smart Fallback: If account already exists or 500 server error occurred, attempt instant sign in!
+          const { data: autoSignIn, error: autoSignInError } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPass
+          });
+          if (!autoSignInError && autoSignIn?.session) {
+            return; // Auto-login succeeded!
           }
           throw signUpError;
         }
