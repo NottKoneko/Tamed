@@ -248,7 +248,13 @@ export const supabaseBackend = {
   // Core Mechanics
   setPetPoints: async (petId, points) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.rpc('set_pet_points', { p_pet_id: petId, p_points: points });
+    const newBalance = Math.max(0, parseInt(points, 10) || 0);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ points_balance: newBalance })
+      .eq('id', petId)
+      .select()
+      .single();
     if (error) throw error;
     return data;
   },
