@@ -13,8 +13,8 @@ export const supabaseBackend = {
   // Profiles
   getProfile: async (userId) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (error && error.code !== 'PGRST116') throw error;
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (error) throw error;
     return data;
   },
 
@@ -46,67 +46,14 @@ export const supabaseBackend = {
     return data;
   },
 
-  // Pairings
-  pairWithCode: async (userId, username, pairCode) => {
-    if (!supabase) return null;
-    const cleanUser = (username || '').trim().toLowerCase();
-    const cleanCode = (pairCode || '').trim();
-
-    // Query partner by Username/UID and pair_code
-    const { data: partners, error: partnerError } = await supabase
-      .from('profiles')
-      .select('*')
-      .or(`pair_code.eq.${cleanCode},uid.eq.${cleanCode}`);
-
-    if (partnerError) throw partnerError;
-
-    const partner = (partners || []).find(p => 
-      (p.username.toLowerCase() === cleanUser || p.uid.toLowerCase() === cleanUser) && p.id !== userId
-    );
-
-    if (!partner) {
-      throw new Error(`Security verification failed: Partner "${username}" with code "${pairCode}" not found.`);
-    }
-
-    const { data: currentUser, error: currentError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (currentError) throw currentError;
-    if (currentUser.role === partner.role) {
-      throw new Error("You must pair with an account of the opposite role (Owner & Pet).");
-    }
-
-    const owner_id = currentUser.role === 'owner' ? userId : partner.id;
-    const pet_id = currentUser.role === 'pet' ? userId : partner.id;
-
-    const { data: pairing, error: pairingError } = await supabase
-      .from('pairings')
-      .insert([{ owner_id, pet_id, status: 'active' }])
-      .select()
-      .single();
-
-    if (pairingError) throw pairingError;
-    return pairing;
-  },
-
-  unpair: async (pairingId) => {
-    if (!supabase) return true;
-    const { error } = await supabase.from('pairings').delete().eq('id', pairingId);
-    if (error) throw error;
-    return true;
-  },
-
   getPairing: async (userId) => {
     if (!supabase) return null;
     const { data, error } = await supabase
       .from('pairings')
       .select('*')
       .or(`owner_id.eq.${userId},pet_id.eq.${userId}`)
-      .single();
-    if (error && error.code !== 'PGRST116') throw error;
+      .maybeSingle();
+    if (error) throw error;
     return data;
   },
 
