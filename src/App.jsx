@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './services/supabaseClient';
 import { useAppStore } from './store/useAppStore';
-import { AuthScreen } from './pages/AuthScreen';
+import AuthScreen from './pages/AuthScreen';
 import { Onboarding } from './pages/Onboarding';
 import { Home } from './pages/Home'; 
 
