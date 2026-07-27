@@ -34,7 +34,7 @@ export const supabaseBackend = {
       mood: profileData.mood || 'Happy'
     };
 
-    const { data, error } = await supabase.from('profiles').insert([payload]).select().single();
+    const { data, error } = await supabase.from('profiles').upsert([payload]).select().single();
     if (error) throw error;
     return data;
   },

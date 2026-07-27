@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { Heart, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
+import { Heart, Mail, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
+
+const validateEmail = (email) => {
+  return String(email)
+    .toLowerCase()
+    .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+};
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -8,23 +14,64 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) return;
-    setLoading(true);
     setError(null);
+    setSuccessMsg(null);
+
+    const cleanEmail = email.trim();
+    const cleanPass = password.trim();
+
+    // Pipeline Validation Steps
+    if (!cleanEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!validateEmail(cleanEmail)) {
+      setError('Please enter a valid email address (e.g. name@example.com).');
+      return;
+    }
+    if (!cleanPass) {
+      setError('Please enter a password.');
+      return;
+    }
+    if (cleanPass.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       if (isLogin) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { error: signInError } = await supabase.auth.signInWithPassword({ 
+          email: cleanEmail, 
+          password: cleanPass 
+        });
         if (signInError) throw signInError;
       } else {
-        const { error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password });
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+          email: cleanEmail, 
+          password: cleanPass 
+        });
         if (signUpError) throw signUpError;
+
+        // Check if email confirmation is required by Supabase project
+        if (signUpData && !signUpData.session) {
+          setSuccessMsg(`Account created for ${cleanEmail}! 📧 Please check your email inbox to confirm your account before logging in.`);
+          setIsLogin(true); // Switch to login tab
+        }
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed');
+      let message = err.message || 'Authentication failed.';
+      if (message.includes('User already registered')) {
+        message = 'An account with this email already exists. Please switch to Log In.';
+      } else if (message.includes('Invalid login credentials')) {
+        message = 'Incorrect email or password. Please try again.';
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -66,17 +113,41 @@ export default function AuthScreen() {
           </p>
         </div>
 
+        {/* Success Banner */}
+        {successMsg && (
+          <div style={{
+            padding: '0.875rem 1rem',
+            borderRadius: 'var(--border-radius)',
+            backgroundColor: 'var(--color-green-light)',
+            color: 'var(--color-green)',
+            fontSize: '0.825rem',
+            fontWeight: 600,
+            border: '1px solid var(--color-green)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.5rem'
+          }}>
+            <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Error Banner */}
         {error && (
           <div style={{
-            padding: '0.875rem',
+            padding: '0.875rem 1rem',
             borderRadius: 'var(--border-radius)',
             backgroundColor: 'var(--color-red-light)',
             color: 'var(--color-red)',
             fontSize: '0.825rem',
             fontWeight: 600,
-            border: '1px solid var(--color-red)'
+            border: '1px solid var(--color-red)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.5rem'
           }}>
-            {error}
+            <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+            <span>{error}</span>
           </div>
         )}
 
@@ -108,13 +179,19 @@ export default function AuthScreen() {
               <input
                 type="password"
                 required
+                minLength={6}
                 className="input-field"
-                placeholder="••••••••"
+                placeholder="•••••••• (Min 6 chars)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{ paddingLeft: '2.75rem' }}
               />
             </div>
+            {!isLogin && (
+              <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '0.3rem', display: 'block' }}>
+                Password must contain at least 6 characters.
+              </span>
+            )}
           </div>
 
           <button
@@ -133,7 +210,7 @@ export default function AuthScreen() {
           </span>
           <button
             type="button"
-            onClick={() => { setIsLogin(!isLogin); setError(null); }}
+            onClick={() => { setIsLogin(!isLogin); setError(null); setSuccessMsg(null); }}
             style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--color-primary-dark)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
           >
             {isLogin ? 'Sign Up' : 'Log In'}

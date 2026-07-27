@@ -56,6 +56,60 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  createInitialProfile: async (profileDetails) => {
+    const { session } = get();
+    const activeUserId = session?.user?.id;
+    
+    if (isSupabaseConfigured && session && activeUserId) {
+      const uid = `${profileDetails.username}#${Math.floor(1000 + Math.random() * 9000)}`;
+      const pair_code = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      const payload = {
+        id: activeUserId,
+        uid,
+        pair_code,
+        role: profileDetails.role,
+        username: profileDetails.username,
+        pet_species: profileDetails.pet_species || (profileDetails.role === 'pet' ? 'puppy' : null),
+        custom_species_name: profileDetails.custom_species_name || null,
+        custom_species_icon: profileDetails.custom_species_icon || null,
+        custom_theme_primary: profileDetails.custom_theme_primary || '#8b5cf6',
+        custom_theme_accent: profileDetails.custom_theme_accent || '#ec4899',
+        custom_theme_mode: 'light',
+        praise_terms: profileDetails.praise_terms || (profileDetails.role === 'pet' ? 'Good girl!' : null),
+        timezone: profileDetails.timezone || 'America/Los_Angeles',
+        points_balance: 0,
+        xp: 0,
+        level: 1,
+        mood: 'Happy'
+      };
+
+      const created = await supabaseBackend.createProfile(payload);
+      set({ user: created, profile: created });
+      applyCustomTheme(created);
+      return created;
+    } else {
+      let profile;
+      if (profileDetails.role === 'owner') {
+        profile = await mockBackend.loginOwner(profileDetails.username);
+      } else {
+        profile = await mockBackend.loginPet(
+          profileDetails.username,
+          profileDetails.pet_species,
+          profileDetails.praise_terms,
+          profileDetails.custom_species_name,
+          profileDetails.custom_species_icon,
+          profileDetails.custom_theme_primary,
+          profileDetails.custom_theme_accent
+        );
+      }
+      profile.timezone = profileDetails.timezone;
+      set({ user: profile, profile });
+      applyCustomTheme(profile);
+      return profile;
+    }
+  },
+
   // Load user & pairing data (works with Supabase when configured, or mockBackend)
   loadPairingData: async () => {
     const { user, session } = get();

@@ -222,6 +222,11 @@ CREATE POLICY "Users can insert their own profile"
 ON public.profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
 
+-- 1b. Pairings INSERT Policy (Required for account pairing)
+CREATE POLICY "Users can insert pairings" 
+ON public.pairings FOR INSERT 
+WITH CHECK (auth.uid() = owner_id OR auth.uid() = pet_id);
+
 -- 2. Trigger function for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $func$

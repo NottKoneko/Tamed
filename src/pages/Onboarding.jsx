@@ -47,31 +47,32 @@ export const Onboarding = () => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { setUser, pairWithCode, showToast } = useAppStore();
+  const { setUser, createInitialProfile, pairWithCode, showToast } = useAppStore();
 
   /* Proceed from Step 2 to Step 3 (Creates profile) */
   const handleProceedToPairing = async () => {
-    if (!username.trim()) return;
+    if (!username.trim() || username.trim().length < 2) {
+      showToast('Please enter a valid name (at least 2 characters)', 'warning');
+      return;
+    }
     setLoading(true);
     try {
-      let profile;
-      if (role === 'owner') {
-        profile = await mockBackend.loginOwner(username.trim());
-      } else {
-        profile = await mockBackend.loginPet(
-          username.trim(), 
-          species, 
-          praiseTerms.trim(), 
-          species === 'custom' ? customSpeciesName.trim() : null, 
-          species === 'custom' ? customSpeciesIcon.trim() : null,
-          species === 'custom' ? primaryColor : '#8b5cf6',
-          species === 'custom' ? accentColor : '#ec4899'
-        );
-      }
-      profile.timezone = timezone;
+      const profileDetails = {
+        role,
+        username: username.trim(),
+        timezone,
+        pet_species: species,
+        praise_terms: praiseTerms.trim(),
+        custom_species_name: species === 'custom' ? customSpeciesName.trim() : null,
+        custom_species_icon: species === 'custom' ? customSpeciesIcon.trim() : null,
+        custom_theme_primary: species === 'custom' ? primaryColor : '#8b5cf6',
+        custom_theme_accent: species === 'custom' ? accentColor : '#ec4899'
+      };
+
+      const profile = await createInitialProfile(profileDetails);
       setCreatedProfile(profile);
 
-      // Pre-fill test credentials helper for easy pairing
+      // Pre-fill test credentials helper if applicable
       if (role === 'pet') {
         setPartnerUserCode('Master Alex');
         setPartnerPairCode('849201');
@@ -93,7 +94,6 @@ export const Onboarding = () => {
     if (!createdProfile || !partnerUserCode.trim() || !partnerPairCode.trim()) return;
     setLoading(true);
     try {
-      await setUser(createdProfile);
       await pairWithCode(partnerUserCode.trim(), partnerPairCode.trim());
     } catch (err) {
       // Toast handled by store
