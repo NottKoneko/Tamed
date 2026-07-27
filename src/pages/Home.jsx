@@ -93,9 +93,21 @@ export const Home = () => {
   };
 
   const copyPairCode = () => {
-    if (user?.pair_code) {
-      navigator.clipboard.writeText(user.pair_code);
+    if (!user?.pair_code) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(user.pair_code);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = user.pair_code;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       showToast('Pair code copied to clipboard! 📋', 'success');
+    } catch (err) {
+      showToast(`Your Pair Code: ${user.pair_code}`, 'info');
     }
   };
 

@@ -10,9 +10,21 @@ export const DashboardOwner = () => {
   const greenDaysCount = (calendarEntries || []).filter((e) => e.status === 'green').length;
 
   const copyPairingCode = () => {
-    if (user?.uid) {
-      navigator.clipboard.writeText(user.uid);
+    if (!user?.uid) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(user.uid);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = user.uid;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       showToast('Pairing code copied to clipboard!', 'success');
+    } catch (err) {
+      showToast(`Pairing code: ${user.uid}`, 'info');
     }
   };
 

@@ -108,10 +108,24 @@ export const Onboarding = () => {
   };
 
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(true);
-    showToast('Pair Code copied to clipboard! 📋', 'success');
-    setTimeout(() => setCopiedCode(false), 2500);
+    if (!text) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedCode(true);
+      showToast('Pair Code copied to clipboard! 📋', 'success');
+      setTimeout(() => setCopiedCode(false), 2500);
+    } catch (err) {
+      showToast(`Pair Code: ${text}`, 'info');
+    }
   };
 
   const themePalettes = [
