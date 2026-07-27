@@ -25,14 +25,30 @@ export const PinModal = ({ isOpen, title = 'Security Verification', onVerify, on
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
-      animation: 'fadeIn 0.2s ease forwards'
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100dvh',
+      zIndex: 99999,
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1.25rem'
     }}>
       <div className="card" style={{
-        maxWidth: '360px', width: '100%', padding: '1.5rem',
-        border: '2px solid var(--color-primary)', boxShadow: 'var(--shadow-lg)'
+        maxWidth: '380px',
+        width: '100%',
+        margin: 'auto',
+        position: 'relative',
+        padding: '1.5rem',
+        border: '2px solid var(--color-primary)',
+        boxShadow: 'var(--shadow-lg)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>

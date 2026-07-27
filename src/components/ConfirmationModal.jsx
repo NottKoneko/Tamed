@@ -28,13 +28,28 @@ export const ConfirmationModal = ({
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
-      animation: 'fadeIn 0.2s ease forwards'
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100dvh',
+      zIndex: 99999,
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1.25rem'
     }}>
       <div className="card" style={{
-        maxWidth: '400px', width: '100%', padding: '1.5rem',
+        maxWidth: '420px',
+        width: '100%',
+        margin: 'auto',
+        position: 'relative',
+        padding: '1.5rem',
         border: danger ? '2px solid var(--color-red)' : '2px solid var(--color-primary)',
         boxShadow: 'var(--shadow-lg)'
       }}>
