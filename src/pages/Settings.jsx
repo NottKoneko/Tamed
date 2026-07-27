@@ -127,6 +127,7 @@ export const Settings = () => {
 
   /* Theme palettes */
   const PALETTES = [
+    { label: 'Sage Green', primary: '#87a96b', accent: '#588157' },
     { label: 'Violet', primary: '#8b5cf6', accent: '#ec4899' },
     { label: 'Emerald', primary: '#10b981', accent: '#06b6d4' },
     { label: 'Coral', primary: '#f97316', accent: '#f59e0b' },

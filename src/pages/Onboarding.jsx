@@ -129,6 +129,7 @@ export const Onboarding = () => {
   };
 
   const themePalettes = [
+    { label: 'Sage Green', primary: '#87a96b', accent: '#588157' },
     { label: 'Neon Violet', primary: '#8b5cf6', accent: '#ec4899' },
     { label: 'Emerald Mint', primary: '#10b981', accent: '#06b6d4' },
     { label: 'Sunset Coral', primary: '#f97316', accent: '#f59e0b' },

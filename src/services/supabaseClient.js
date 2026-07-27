@@ -311,5 +311,81 @@ export const supabaseBackend = {
     const { data, error } = await supabase.rpc('add_xp', { p_profile_id: petId, p_amount: amount });
     if (error) throw error;
     return data;
+  },
+
+  // Pairings
+  pairWithCode: async (currentUserId, targetUsernameOrUid, targetPairCode) => {
+    if (!supabase) return null;
+    const cleanUser = (targetUsernameOrUid || '').trim();
+    const cleanCode = (targetPairCode || '').trim();
+
+    if (!cleanUser || !cleanCode) {
+      throw new Error("Both Username/UID and 6-digit Pair Code are required for secure pairing!");
+    }
+
+    // Fetch current user profile
+    const { data: me, error: meError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUserId)
+      .single();
+
+    if (meError || !me) throw new Error("Your user profile was not found.");
+
+    // Fetch target profile matching EITHER username OR uid AND pair_code
+    const { data: targets, error: targetError } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`username.ilike.${cleanUser},uid.ilike.${cleanUser}`)
+      .eq('pair_code', cleanCode);
+
+    if (targetError) throw targetError;
+
+    const target = (targets || []).find(p => p.id !== me.id);
+
+    if (!target) {
+      throw new Error(`Partner "${cleanUser}" with pair code "${cleanCode}" was not found. Please verify credentials.`);
+    }
+
+    if (me.role === target.role) {
+      throw new Error(`Pairing requires one Owner and one Pet role. Both accounts currently have the "${me.role}" role.`);
+    }
+
+    const ownerId = me.role === 'owner' ? me.id : target.id;
+    const petId = me.role === 'pet' ? me.id : target.id;
+
+    // Check existing pairing
+    const { data: existingPairings } = await supabase
+      .from('pairings')
+      .select('*')
+      .or(`owner_id.eq.${ownerId},pet_id.eq.${ownerId}`);
+
+    const existing = (existingPairings || []).find(p => p.owner_id === ownerId && p.pet_id === petId);
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('pairings')
+        .update({ status: 'active' })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      const { data, error } = await supabase
+        .from('pairings')
+        .insert([{ owner_id: ownerId, pet_id: petId, status: 'active' }])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  unpair: async (pairingId) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('pairings').delete().eq('id', pairingId);
+    if (error) throw error;
+    return data;
   }
 };
