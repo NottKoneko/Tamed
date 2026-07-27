@@ -147,7 +147,7 @@ RETURNS BOOLEAN AS $$
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- Profiles
-CREATE POLICY "Users can view their own profile and their partner's" ON public.profiles FOR SELECT USING (id = auth.uid() OR id IN (SELECT owner_id FROM pairings WHERE pet_id = auth.uid()) OR id IN (SELECT pet_id FROM pairings WHERE owner_id = auth.uid()));
+CREATE POLICY "Authenticated users can search and view profiles" ON public.profiles FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (id = auth.uid());
 CREATE POLICY "Owners can update their pet's profile" ON public.profiles FOR UPDATE USING (
   id IN (SELECT pet_id FROM pairings WHERE owner_id = auth.uid())
@@ -155,7 +155,8 @@ CREATE POLICY "Owners can update their pet's profile" ON public.profiles FOR UPD
 
 -- Pairings
 CREATE POLICY "Users can view their own pairings" ON public.pairings FOR SELECT USING (owner_id = auth.uid() OR pet_id = auth.uid());
-CREATE POLICY "Owners can update pairing settings" ON public.pairings FOR UPDATE USING (owner_id = auth.uid());
+CREATE POLICY "Users can update their pairings" ON public.pairings FOR UPDATE USING (owner_id = auth.uid() OR pet_id = auth.uid());
+CREATE POLICY "Users can delete their pairings" ON public.pairings FOR DELETE USING (owner_id = auth.uid() OR pet_id = auth.uid());
 
 -- Calendar
 CREATE POLICY "Users can view calendar for their pairings" ON public.calendar_entries FOR SELECT USING (is_user_in_pairing(pairing_id));

@@ -279,7 +279,7 @@ export const supabaseBackend = {
 
     if (meError || !me) throw new Error("Your user profile was not found. Please try logging out and in again.");
 
-    // Fetch all profiles to find matching partner without query syntax failures
+    // Fetch profiles to find matching partner
     const { data: profiles, error: targetError } = await supabase
       .from('profiles')
       .select('*');
@@ -289,7 +289,7 @@ export const supabaseBackend = {
     const target = (profiles || []).find(p => 
       p.id !== me.id &&
       (p.username.toLowerCase() === cleanUser || p.uid.toLowerCase() === cleanUser) &&
-      (p.pair_code === cleanCode || p.uid.toLowerCase() === cleanCode)
+      (p.pair_code === cleanCode || (p.uid && p.uid.toLowerCase() === cleanCode))
     );
 
     if (!target) {
