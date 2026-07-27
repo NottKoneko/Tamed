@@ -1,0 +1,18 @@
+{
+  "short_name": "Tamed",
+  "name": "Tamed — Couple Reward System & Codex",
+  "description": "Relationship codex & reward system for couples",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f0d1a",
+  "theme_color": "#8b5cf6",
+  "display": "standalone",
+  "orientation": "portrait"
+}
