@@ -139,19 +139,31 @@ export default function AuthScreen() {
         }
       }
     } catch (err) {
-      let message = typeof err?.message === 'string' ? err.message : '';
-      if (!message && typeof err === 'string') message = err;
-      if (!message && err?.error_description) message = err.error_description;
-      if (!message && err?.msg) message = err.msg;
-      if (!message) message = 'Authentication failed. Please check your email/password and network connection.';
+      console.error("Auth error:", err);
+      let message = '';
+      if (typeof err === 'string') message = err;
+      else if (typeof err?.message === 'string' && err.message) message = err.message;
+      else if (typeof err?.error_description === 'string' && err.error_description) message = err.error_description;
+      else if (typeof err?.msg === 'string' && err.msg) message = err.msg;
+      else if (typeof err?.error === 'string' && err.error) message = err.error;
 
-      if (message.includes('User already registered')) {
-        message = 'An account with this email already exists. Please switch to Log In.';
+      // Friendly error overrides
+      if (message.includes('Email not confirmed')) {
+        message = '📧 Email not confirmed yet! Please check your inbox for the confirmation email, or switch to Log In if confirmed.';
+      } else if (message.includes('User already registered')) {
+        message = 'An account with this email already exists. Please switch to Log In above!';
       } else if (message.includes('Invalid login credentials')) {
         message = 'Incorrect email or password. Please double check and try again.';
-      } else if (message.includes('over_email_send_rate_limit') || message.includes('rate limit exceeded') || err?.status === 429) {
-        message = '⏳ Email rate limit reached: Security limits allow 1 email per minute. If you already created an account, click "Log In" below!';
+      } else if (message.includes('over_email_send_rate_limit') || message.includes('rate limit') || err?.status === 429) {
+        message = '⏳ Email rate limit reached: Please wait 60 seconds before trying again, or switch to Log In above!';
+      } else if (message.includes('Failed to fetch')) {
+        message = '🌐 Network error: Unable to reach authentication server. Please check your connection or ad-blocker.';
       }
+
+      if (!message || message === '{}' || message === '[object Object]') {
+        message = 'Authentication failed. Please check your email, password, and internet connection.';
+      }
+
       setError(message);
     } finally {
       setLoading(false);
@@ -278,7 +290,7 @@ export default function AuthScreen() {
             gap: '0.5rem'
           }}>
             <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-            <span>{error}</span>
+            <span>{typeof error === 'string' ? error : 'Authentication failed. Please check your credentials.'}</span>
           </div>
         )}
 
