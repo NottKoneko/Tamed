@@ -5,7 +5,7 @@ import { XPProgressBar } from '../components/XPProgressBar';
 import { formatCurrency, getCurrencyInfo } from '../utils/currency';
 import { 
   Trophy, Sparkles, Plus, Minus, Gift, Calendar as CalendarIcon, Shield, 
-  Flame, Heart, Send, CheckCircle2, Circle, Trash2, Tag, Award, MoreVertical, Check, RotateCcw
+  Flame, Heart, Send, CheckCircle2, Circle, Trash2, Tag, Award, MoreVertical, Check, RotateCcw, Copy
 } from 'lucide-react';
 
 export const Home = () => {
