@@ -56,11 +56,24 @@ export default function AuthScreen() {
           email: cleanEmail, 
           password: cleanPass 
         });
-        if (signUpError) throw signUpError;
+
+        if (signUpError) {
+          // Smart Fallback: If account was created on previous attempt or rate limited, attempt instant sign in!
+          if (signUpError.message?.includes('rate_limit') || signUpError.message?.includes('already registered') || signUpError.message?.includes('exceeded')) {
+            const { error: autoSignInError } = await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: cleanPass
+            });
+            if (!autoSignInError) {
+              return; // Auto-login succeeded!
+            }
+          }
+          throw signUpError;
+        }
 
         // Check if email confirmation is required by Supabase project
         if (signUpData && !signUpData.session) {
-          setSuccessMsg(`Account created for ${cleanEmail}! 📧 Please check your email inbox to confirm your account before logging in.`);
+          setSuccessMsg(`Account created for ${cleanEmail}! 📧 Please check your inbox, or switch to Log In below if confirmed.`);
           setIsLogin(true); // Switch to login tab
         }
       }
@@ -70,6 +83,8 @@ export default function AuthScreen() {
         message = 'An account with this email already exists. Please switch to Log In.';
       } else if (message.includes('Invalid login credentials')) {
         message = 'Incorrect email or password. Please try again.';
+      } else if (message.includes('over_email_send_rate_limit') || message.includes('rate limit exceeded') || err.status === 429) {
+        message = '⏳ Email rate limit reached: Supabase limits 1 email per minute. If you already created an account, click "Log In" below!';
       }
       setError(message);
     } finally {
