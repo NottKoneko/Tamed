@@ -139,12 +139,17 @@ export default function AuthScreen() {
         }
       }
     } catch (err) {
-      let message = err.message || 'Authentication failed.';
+      let message = typeof err?.message === 'string' ? err.message : '';
+      if (!message && typeof err === 'string') message = err;
+      if (!message && err?.error_description) message = err.error_description;
+      if (!message && err?.msg) message = err.msg;
+      if (!message) message = 'Authentication failed. Please check your email/password and network connection.';
+
       if (message.includes('User already registered')) {
         message = 'An account with this email already exists. Please switch to Log In.';
       } else if (message.includes('Invalid login credentials')) {
         message = 'Incorrect email or password. Please double check and try again.';
-      } else if (message.includes('over_email_send_rate_limit') || message.includes('rate limit exceeded') || err.status === 429) {
+      } else if (message.includes('over_email_send_rate_limit') || message.includes('rate limit exceeded') || err?.status === 429) {
         message = '⏳ Email rate limit reached: Security limits allow 1 email per minute. If you already created an account, click "Log In" below!';
       }
       setError(message);
