@@ -134,7 +134,17 @@ export default function AuthScreen() {
 
         // Check if email confirmation is required by Supabase project
         if (signUpData && !signUpData.session) {
-          setSuccessMsg(`Account created for ${cleanEmail}! 📧 Please check your inbox to confirm, or switch to Log In below if confirmed.`);
+          // Attempt instant background sign in
+          const { data: directSignIn } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPass
+          });
+
+          if (directSignIn?.session) {
+            return; // Logged in instantly!
+          }
+
+          setSuccessMsg(`Account created for ${cleanEmail}! 📧 If you don't receive an email within 60s, disable "Confirm Email" in your Supabase Auth settings or click "Log In" above to sign in.`);
           setMode('login'); // Switch to login tab
         }
       }
