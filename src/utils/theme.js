@@ -58,6 +58,63 @@ export const THEME_MODES = {
   }
 };
 
+export const THEME_PRESETS = [
+  {
+    id: 'creamy_moss',
+    name: 'Creamy Moss 🌿',
+    subtitle: 'Soft Cream 🍦 x Sage Green 🌿',
+    mode: 'soft',
+    primary: '#4a7c59',
+    accent: '#87a96b',
+    icon: '🌿'
+  },
+  {
+    id: 'midnight_royal',
+    name: 'Midnight Royal 👑',
+    subtitle: 'Midnight Dark 🌙 x Royal Violet 💜',
+    mode: 'dark',
+    primary: '#8b5cf6',
+    accent: '#ec4899',
+    icon: '👑'
+  },
+  {
+    id: 'obsidian_ember',
+    name: 'Obsidian Ember 🔥',
+    subtitle: 'Obsidian Black 🖤 x Amber Glow 🌅',
+    mode: 'dark2',
+    primary: '#ea580c',
+    accent: '#f59e0b',
+    icon: '🔥'
+  },
+  {
+    id: 'blush_rose',
+    name: 'Blush Rose 🌸',
+    subtitle: 'Clean Light ☀️ x Rose Pink 💖',
+    mode: 'light',
+    primary: '#ec4899',
+    accent: '#a855f7',
+    icon: '🌸'
+  },
+  {
+    id: 'ocean_breeze',
+    name: 'Ocean Breeze 🌊',
+    subtitle: 'Clean Light ☀️ x Deep Cyan 💙',
+    mode: 'light',
+    primary: '#3b82f6',
+    accent: '#06b6d4',
+    icon: '🌊'
+  },
+  {
+    id: 'matcha_latte',
+    name: 'Matcha Latte 🍵',
+    subtitle: 'Soft Cream 🍦 x Forest Matcha 🍃',
+    mode: 'soft',
+    primary: '#2d6a4f',
+    accent: '#74c69d',
+    icon: '🍵'
+  }
+];
+
 export const applyCustomTheme = (profile) => {
   const root = document.documentElement;
 

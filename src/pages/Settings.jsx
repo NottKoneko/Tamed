@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getCurrencyInfo } from '../utils/currency';
-import { THEME_MODES } from '../utils/theme';
+import { THEME_MODES, THEME_PRESETS } from '../utils/theme';
 import { requestNotificationPermission, scheduleLocalDailyCheckIn } from '../utils/notifications';
 import { TIMEZONE_OPTIONS } from './Onboarding';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -535,13 +535,140 @@ export const Settings = () => {
       <Section
         icon={<Palette />}
         title="Page Theme & Colors"
-        subtitle="Customize your entire app environment"
+        subtitle="Customize your entire app environment & palette"
         accentColor="var(--color-primary)"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* Real-time Theme Preview Card */}
+          <div style={{
+            borderRadius: 'var(--border-radius-lg)',
+            padding: '1.25rem',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            boxShadow: 'var(--shadow-sm)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.85rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Sparkles size={16} color="var(--color-primary)" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary-dark)', letterSpacing: '0.04em' }}>
+                  Live App Theme Preview
+                </span>
+              </div>
+              <span className="badge" style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary-dark)', fontSize: '0.675rem' }}>
+                {THEME_MODES[pageThemeMode]?.name || 'Light'} Mode
+              </span>
+            </div>
+
+            {/* Live Hero Gradient Strip */}
+            <div style={{
+              height: '48px',
+              borderRadius: 'var(--border-radius)',
+              background: `linear-gradient(135deg, ${pagePrimary} 0%, ${pageAccent} 100%)`,
+              padding: '0.75rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'space-between',
+              color: 'white',
+              boxShadow: `0 4px 14px ${pagePrimary}40`
+            }}>
+              <span style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '-0.01em' }}>
+                Tamed Live Preview ✨
+              </span>
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '999px', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>
+                  Primary {pagePrimary}
+                </span>
+                <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '999px', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>
+                  Accent {pageAccent}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ✨ Preconfigured Theme Sets */}
           <div>
-            <Label>Environment Mode</Label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <Label>✨ Curated Theme Presets</Label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              {THEME_PRESETS.map((preset) => {
+                const isActive = (
+                  pageThemeMode === preset.mode &&
+                  pagePrimary.toLowerCase() === preset.primary.toLowerCase() &&
+                  pageAccent.toLowerCase() === preset.accent.toLowerCase()
+                );
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      setPagePrimary(preset.primary);
+                      setPageAccent(preset.accent);
+                      setPageThemeMode(preset.mode);
+                      updateCustomTheme(preset.primary, preset.accent, preset.mode);
+                    }}
+                    style={{
+                      padding: '0.9rem 1rem',
+                      borderRadius: 'var(--border-radius)',
+                      border: isActive ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                      backgroundColor: isActive ? 'rgba(139, 92, 246, 0.08)' : 'var(--color-surface)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: isActive ? 'var(--shadow-glow)' : 'var(--shadow-sm)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.4rem',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-text-main)' }}>
+                        {preset.name}
+                      </span>
+                      {isActive ? (
+                        <span className="badge" style={{ backgroundColor: 'var(--color-primary)', color: 'white', fontSize: '0.6rem', padding: '0.12rem 0.5rem' }}>
+                          Active ✓
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.9rem' }}>{preset.icon}</span>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                      {preset.subtitle}
+                    </div>
+
+                    {/* Dual Color Swatch Bar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+                      <div style={{
+                        height: '10px',
+                        flex: 1,
+                        borderRadius: '5px',
+                        backgroundColor: preset.primary,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
+                      }} />
+                      <div style={{
+                        height: '10px',
+                        flex: 1,
+                        borderRadius: '5px',
+                        backgroundColor: preset.accent,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
+                      }} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Environment Modes */}
+          <div>
+            <Label>Environment Background Modes</Label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
               {Object.values(THEME_MODES).map((mode) => {
                 const active = pageThemeMode === mode.id;
                 return (
@@ -553,18 +680,29 @@ export const Settings = () => {
                       updateCustomTheme(pagePrimary, pageAccent, mode.id);
                     }}
                     style={{
-                      padding: '0.75rem',
+                      padding: '0.85rem 1rem',
                       borderRadius: 'var(--border-radius)',
                       border: active ? '2px solid var(--color-primary)' : '1.5px solid var(--color-border)',
                       backgroundColor: mode.surface,
-                      cursor: 'pointer', transition: 'all 0.15s ease',
-                      boxShadow: active ? 'var(--shadow-glow)' : 'none'
+                      cursor: 'pointer', 
+                      transition: 'all 0.15s ease',
+                      boxShadow: active ? 'var(--shadow-glow)' : 'var(--shadow-sm)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
                     }}
                   >
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: mode.textMain }}>{mode.name}</div>
-                    <div style={{ marginTop: '0.35rem', display: 'flex', gap: '4px' }}>
-                      <div style={{ height: '6px', flex: 1, borderRadius: '3px', backgroundColor: mode.background }} />
-                      <div style={{ height: '6px', flex: 1, borderRadius: '3px', backgroundColor: mode.border === 'rgba(255,255,255,0.08)' ? 'rgba(255,255,255,0.1)' : mode.border }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.825rem', fontWeight: 800, color: mode.textMain }}>{mode.name}</span>
+                      {active && (
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                          <Check size={12} strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px', height: '8px' }}>
+                      <div style={{ height: '100%', flex: 2, borderRadius: '4px', backgroundColor: mode.background }} />
+                      <div style={{ height: '100%', flex: 1, borderRadius: '4px', backgroundColor: mode.border === 'rgba(255,255,255,0.08)' ? 'rgba(255,255,255,0.2)' : mode.border }} />
                     </div>
                   </button>
                 );
@@ -572,39 +710,66 @@ export const Settings = () => {
             </div>
           </div>
 
+          {/* Quick Palettes */}
           <div>
-            <Label>Quick Palettes</Label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {PALETTES.map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => {
-                    setPagePrimary(p.primary);
-                    setPageAccent(p.accent);
-                    updateCustomTheme(p.primary, p.accent, pageThemeMode);
-                  }}
-                  style={chipStyle(pagePrimary === p.primary)}
-                >
-                  <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: p.primary, flexShrink: 0 }} />
-                  <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: p.accent, flexShrink: 0 }} />
-                  {p.label}
-                </button>
-              ))}
+            <Label>Quick Color Palettes</Label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+              {PALETTES.map((p) => {
+                const isSelected = pagePrimary.toLowerCase() === p.primary.toLowerCase();
+                return (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => {
+                      setPagePrimary(p.primary);
+                      setPageAccent(p.accent);
+                      updateCustomTheme(p.primary, p.accent, pageThemeMode);
+                    }}
+                    style={{
+                      padding: '0.4rem 0.75rem',
+                      borderRadius: 'var(--border-radius-full)',
+                      border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                      backgroundColor: isSelected ? 'rgba(139, 92, 246, 0.1)' : 'var(--color-surface)',
+                      fontWeight: isSelected ? 800 : 600,
+                      fontSize: '0.775rem',
+                      color: isSelected ? 'var(--color-primary-dark)' : 'var(--color-text-main)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: isSelected ? '0 2px 8px rgba(139, 92, 246, 0.2)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: p.primary, flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: p.accent, flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          {/* Custom Color Pickers */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
             {[
-              { label: 'Primary', value: pagePrimary, set: setPagePrimary },
-              { label: 'Accent', value: pageAccent, set: setPageAccent }
+              { label: 'Primary Color', value: pagePrimary, set: setPagePrimary },
+              { label: 'Accent Color', value: pageAccent, set: setPageAccent }
             ].map(({ label, value, set }) => (
-              <div key={label}>
-                <Label>{label}</Label>
+              <div key={label} style={{
+                padding: '0.85rem',
+                borderRadius: 'var(--border-radius)',
+                backgroundColor: 'var(--color-surface-hover)',
+                border: '1px solid var(--color-border)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <Label style={{ marginBottom: 0 }}>{label}</Label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <label style={{
-                    width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0, cursor: 'pointer',
-                    backgroundColor: value, boxShadow: `0 0 0 3px var(--color-surface), 0 0 0 5px ${value}60`,
+                    width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0, cursor: 'pointer',
+                    backgroundColor: value, boxShadow: `0 0 0 2px var(--color-surface), 0 0 0 4px ${value}60`,
                     overflow: 'hidden', display: 'block'
                   }}>
                     <input
@@ -613,8 +778,8 @@ export const Settings = () => {
                       onChange={e => {
                         const val = e.target.value;
                         set(val);
-                        const nextPrim = label === 'Primary' ? val : pagePrimary;
-                        const nextAcc = label === 'Accent' ? val : pageAccent;
+                        const nextPrim = label === 'Primary Color' ? val : pagePrimary;
+                        const nextAcc = label === 'Accent Color' ? val : pageAccent;
                         updateCustomTheme(nextPrim, nextAcc, pageThemeMode);
                       }}
                       style={{ opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
@@ -628,12 +793,12 @@ export const Settings = () => {
                       const val = e.target.value;
                       set(val);
                       if (val.startsWith('#') && (val.length === 4 || val.length === 7)) {
-                        const nextPrim = label === 'Primary' ? val : pagePrimary;
-                        const nextAcc = label === 'Accent' ? val : pageAccent;
+                        const nextPrim = label === 'Primary Color' ? val : pagePrimary;
+                        const nextAcc = label === 'Accent Color' ? val : pageAccent;
                         updateCustomTheme(nextPrim, nextAcc, pageThemeMode);
                       }
                     }}
-                    style={{ fontSize: '0.8rem', padding: '0.55rem 0.75rem', fontFamily: 'monospace' }}
+                    style={{ fontSize: '0.8rem', padding: '0.5rem 0.65rem', fontFamily: 'monospace', fontWeight: 700 }}
                   />
                 </div>
               </div>
