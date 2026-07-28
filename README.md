@@ -383,16 +383,19 @@ If environment variables `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` are not
 ### 1. Prerequisites
 - **Node.js**: `v18.0.0` or higher
 - **npm**: `v9.0.0` or higher
+- **Git**: Installed and configured on your system
 - **Supabase Account**: (Optional for production cloud database)
+- **Cloudflare Account**: (Optional for production web hosting)
 
 ---
 
-### 2. Local Development Setup
+### 2. Local Development & GitHub Repository Setup
 
+#### Option A: Clone or Fork an Existing Repository
 ```bash
-# 1. Clone the repository
-git clone https://github.com/NottKoneko/Tamed.git
-cd "Tamed"
+# 1. Clone your GitHub repository (replace with your username/repo)
+git clone https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>.git
+cd <YOUR_REPOSITORY_NAME>
 
 # 2. Install project dependencies
 npm install
@@ -401,7 +404,26 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+#### Option B: Creating & Pushing to Your Own GitHub Repository
+If you are initializing a fresh repository for your deployment:
+
+```bash
+# 1. Initialize git (if not already initialized)
+git init
+
+# 2. Add your GitHub remote repository URL
+git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>.git
+
+# 3. Stage and commit all project files
+git add .
+git commit -m "Initial commit of Tamed application"
+
+# 4. Push to your main branch
+git branch -M main
+git push -u origin main
+```
+
+The local app will be available at `http://localhost:5173`.
 
 ---
 
@@ -452,20 +474,21 @@ npm run preview
 
 ### 6. Cloudflare Pages Deployment
 
-Deploy directly via Cloudflare Pages:
+Deploy directly using your personal or organization GitHub repository:
 
-1. Push your repository to GitHub (`NottKoneko/Tamed`).
-2. Open the [Cloudflare Dashboard](https://dash.cloudflare.com/) -> **Workers & Pages**.
+1. Push your codebase to your own GitHub repository (`https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>`).
+2. Log into your [Cloudflare Dashboard](https://dash.cloudflare.com/) -> **Workers & Pages**.
 3. Click **Create Application** -> **Pages** -> **Connect to Git**.
-4. Select `NottKoneko/Tamed`.
-5. Set Build Settings:
+4. Authorize Cloudflare to access your GitHub account and select your repository (`<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>`).
+5. Configure build parameters:
    - **Framework Preset**: `Vite`
    - **Build Command**: `npm run build`
    - **Build Output Directory**: `dist`
-6. Add Environment Variables under **Settings -> Environment Variables**:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-7. Click **Save and Deploy**.
+6. Add your Environment Variables under **Settings -> Environment Variables**:
+   - `VITE_SUPABASE_URL`: Your Supabase Project URL
+   - `VITE_SUPABASE_ANON_KEY`: Your Supabase Public Anon Key
+7. Click **Save and Deploy**. Your custom instance will now automatically build and deploy whenever you push to your `main` branch!
+
 
 ---
 
