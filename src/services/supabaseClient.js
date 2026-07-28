@@ -70,13 +70,37 @@ export const supabaseBackend = {
 
   setCalendarEntry: async (pairingId, date, status) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.rpc('process_calendar_entry', {
+
+    // Try stored procedure RPC first
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('process_calendar_entry', {
       p_pairing_id: pairingId,
       p_date: date,
       p_status: status
     });
-    if (error) throw error;
-    return data;
+    if (!rpcErr) return rpcData;
+
+    // Direct table fallback if RPC not installed yet
+    if (status === 'none') {
+      const { error } = await supabase
+        .from('calendar_entries')
+        .delete()
+        .eq('pairing_id', pairingId)
+        .eq('entry_date', date);
+      if (error) throw error;
+      return true;
+    } else {
+      const { data, error } = await supabase
+        .from('calendar_entries')
+        .upsert({
+          pairing_id: pairingId,
+          entry_date: date,
+          status: status,
+          points_awarded: status === 'green' ? 1 : 0
+        }, { onConflict: 'pairing_id,entry_date' })
+        .select();
+      if (error) throw error;
+      return data;
+    }
   },
 
   // Daily Tasks

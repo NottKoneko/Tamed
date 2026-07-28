@@ -574,6 +574,49 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  // Calendar Management
+  setCalendarStatus: async (dateStr, status) => {
+    const { pairing, session, showToast } = get();
+    if (!pairing) return;
+
+    // Optimistically update calendar entries state
+    const currentEntries = get().calendarEntries || [];
+    const existingIdx = currentEntries.findIndex(e => e.entry_date === dateStr);
+    let updatedEntries = [...currentEntries];
+
+    if (existingIdx !== -1) {
+      if (status === 'none') {
+        updatedEntries.splice(existingIdx, 1);
+      } else {
+        updatedEntries[existingIdx] = { ...updatedEntries[existingIdx], status };
+      }
+    } else if (status !== 'none') {
+      updatedEntries.push({
+        id: `temp-${dateStr}`,
+        pairing_id: pairing.id,
+        entry_date: dateStr,
+        status,
+        points_awarded: 1
+      });
+    }
+
+    set({ calendarEntries: updatedEntries });
+
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.setCalendarEntry(pairing.id, dateStr, status);
+      } else {
+        await mockBackend.setCalendarEntry(pairing.id, dateStr, status);
+      }
+      playSound('click');
+      if (status === 'green') triggerConfetti();
+      await get().loadPairingData();
+    } catch (err) {
+      showToast(err.message, 'warning');
+      get().loadPairingData();
+    }
+  },
+
   // Store Management
   createRewardItem: async (name, description, pointCost) => {
     const { pairing, session, showToast } = get();

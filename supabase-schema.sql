@@ -458,3 +458,72 @@ BEGIN
   );
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. RPC: Process Calendar Entry (Atomic Status Toggle & Points Award)
+DROP FUNCTION IF EXISTS process_calendar_entry(UUID, DATE, TEXT);
+CREATE OR REPLACE FUNCTION process_calendar_entry(
+  p_pairing_id UUID,
+  p_date DATE,
+  p_status TEXT
+)
+RETURNS JSONB AS $func$
+DECLARE
+  v_pairing RECORD;
+  v_existing RECORD;
+  v_new_points INT := 0;
+  v_old_points INT := 0;
+  v_delta INT := 0;
+  v_is_weekend BOOLEAN;
+  v_multiplier NUMERIC := 1.0;
+BEGIN
+  SELECT * INTO v_pairing FROM public.pairings WHERE id = p_pairing_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Pairing not found';
+  END IF;
+
+  SELECT * INTO v_existing FROM public.calendar_entries 
+  WHERE pairing_id = p_pairing_id AND entry_date = p_date;
+
+  IF v_existing IS NOT NULL THEN
+    v_old_points := COALESCE(v_existing.points_awarded, 0);
+  END IF;
+
+  -- Determine points for status
+  IF p_status = 'green' THEN
+    v_is_weekend := EXTRACT(DOW FROM p_date) IN (0, 6);
+    IF v_is_weekend AND v_pairing.weekend_multiplier IS NOT NULL THEN
+      v_multiplier := v_pairing.weekend_multiplier;
+    END IF;
+    v_new_points := ROUND(COALESCE(v_pairing.point_value_green, 1) * v_multiplier);
+  ELSIF p_status = 'yellow' THEN
+    v_new_points := COALESCE(v_pairing.point_value_yellow, 0);
+  ELSIF p_status = 'red' THEN
+    v_new_points := COALESCE(v_pairing.point_value_red, 0);
+  END IF;
+
+  IF p_status = 'none' THEN
+    DELETE FROM public.calendar_entries WHERE pairing_id = p_pairing_id AND entry_date = p_date;
+  ELSE
+    INSERT INTO public.calendar_entries (pairing_id, entry_date, status, points_awarded)
+    VALUES (p_pairing_id, p_date, p_status, v_new_points)
+    ON CONFLICT (pairing_id, entry_date)
+    DO UPDATE SET status = EXCLUDED.status, points_awarded = EXCLUDED.points_awarded;
+  END IF;
+
+  v_delta := v_new_points - v_old_points;
+
+  IF v_delta != 0 THEN
+    UPDATE public.profiles 
+    SET points_balance = GREATEST(0, COALESCE(points_balance, 0) + v_delta)
+    WHERE id = v_pairing.pet_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'pairing_id', p_pairing_id,
+    'entry_date', p_date,
+    'status', p_status,
+    'points_awarded', v_new_points,
+    'points_delta', v_delta
+  );
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
