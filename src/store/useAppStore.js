@@ -367,7 +367,7 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  // Behavior Codex (Daily Tasks)
+  // Daily Tasks & Routines
   createDailyTask: async (title) => {
     const { pairing, session, showToast } = get();
     if (!pairing) return;

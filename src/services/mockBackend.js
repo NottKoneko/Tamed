@@ -9,7 +9,7 @@ let db = {
   reward_proposals: [], // Store addition requests from Pet
   reward_items: [],     // Active Reward Store Catalog
   redemptions: [],      // Redeemed rewards queue & history
-  daily_tasks: [],      // Behavior Codex daily tasks
+  daily_tasks: [],      // Daily tasks & routines
   praise_notes: [],     // Owner praise cards & head pats
   reminders: []         // Scheduled reminders & instant nudges
 };
@@ -68,7 +68,7 @@ const seedData = () => {
     { id: uuidv4(), pairing_id: pairingId, name: 'Movie Night Cuddles 🍿', description: 'Full cuddle session with favorite movie', point_cost: 5, created_at: new Date().toISOString() }
   );
 
-  // Behavior Codex (Daily Tasks)
+  // Daily Tasks & Routines
   db.daily_tasks.push(
     { id: uuidv4(), pairing_id: pairingId, title: 'Drink 2L of Fresh Water 💧', xp_reward: 25, is_completed: true, task_date: getLocalDateString() },
     { id: uuidv4(), pairing_id: pairingId, title: '15 Minutes Outdoor Walk / Stretch 🐾', xp_reward: 25, is_completed: false, task_date: getLocalDateString() },
@@ -401,7 +401,7 @@ class MockBackend {
     return entry;
   }
 
-  // --- Behavior Codex (Daily Tasks) ---
+  // --- Daily Tasks & Routines ---
   async getDailyTasks(pairingId) {
     await delay();
     const todayStr = getLocalDateString();

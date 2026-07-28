@@ -4,14 +4,14 @@ As the **Master / Owner**, you set daily routine expectations, reward good behav
 
 ---
 
-## 1. Behavior Codex (Daily Tasks)
+## 1. Daily Tasks & Routines
 
-The **Behavior Codex** allows you to create daily routine checklist items for your partner.
+The **Daily Tasks** section allows you to create daily routine checklist items for your partner.
 
 * **Adding a Task:** Navigate to the Home screen, click **+ Add Task**, enter the task title (e.g., *"Drink 2L Fresh Water 💧"*), and set the XP reward (default: 25 XP).
 * **3-Dots Menu:** Tap the 3-dots icon on any task to:
   - **Override Task:** Force mark a task as completed or incomplete.
-  - **Delete Task:** Remove a task permanently from the Codex.
+  - **Delete Task:** Remove a task permanently.
 * **Auto Day-End Reset:** All daily task checkmarks automatically reset at midnight every day so your Pet starts each day with a fresh checklist!
 
 ---

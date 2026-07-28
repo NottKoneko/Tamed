@@ -1,6 +1,6 @@
 # 🐾 Welcome to the Tamed Wiki
 
-> **The Ultimate Gamified Routine Tracking, Behavioral Positive Reinforcement & Reward Management Ecosystem for Couples & Partners.**
+> **The Ultimate Gamified Routine Tracking, Positive Reinforcement & Reward Management App for Couples & Partners.**
 
 [![Live Web Application](https://img.shields.io/badge/🚀_Live_App-tamed.pages.dev-8B5CF6?style=for-the-badge&logo=cloudflare&logoColor=white)](https://tamed.pages.dev/)
 [![React Version](https://img.shields.io/badge/React-19.2.7-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
@@ -23,7 +23,7 @@
 | :--- | :--- | :--- |
 | [**Home**](Home) | Overview, product vision, and general directory. | All Users |
 | [**User Onboarding Guide**](User-Onboarding-Guide) | Account creation, role selection, and 6-digit pair code linking. | New Users |
-| [**Owner Guide**](Owner-Guide) | Behavior Codex task creation, calendar status logging, praise cards, & reward approvals. | Owner Persona |
+| [**Owner Guide**](Owner-Guide) | Daily task creation, calendar status logging, praise cards, & reward approvals. | Owner Persona |
 | [**Pet Guide**](Pet-Guide) | Daily task checklists, earning XP, mascot customization, and reward redemptions. | Pet Persona |
 | [**Architecture & Database**](Architecture-and-Database) | Technical architecture, Zustand store map, Supabase SQL schema, & RLS policies. | Developers |
 | [**FAQ**](FAQ) | Frequently Asked Questions, troubleshooting, and offline demo mode. | All Users |
@@ -40,7 +40,7 @@
        ├─────────────────────────────────────────────────────────────┤
        │   👑 OWNER DASHBOARD           🦊 PET DASHBOARD              │
        │   • Calendar Status (G/Y/R)    • Interactive Mascot Avatar   │
-       │   • Daily Behavior Codex       • Level & XP Progress Bar     │
+       │   • Daily Routines & Tasks     • Level & XP Progress Bar     │
        │   • Reward Item Catalog        • Custom Species Currency 🦴   │
        │   • Instant Praise Sender      • Store Redemptions & Requests│
        │   • 6-Digit Pair Code Auth     • Habit Checklists            │

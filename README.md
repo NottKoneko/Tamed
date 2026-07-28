@@ -1,6 +1,6 @@
 # 🐾 TAMED (Puppy Schedule)
 
-> **The Ultimate Gamified Routine Tracking, Behavioral Positive Reinforcement & Reward Management Ecosystem for Couples & Partners.**
+> **The Ultimate Gamified Routine Tracking, Positive Reinforcement & Reward Management App for Couples & Partners.**
 
 [![Live Web Application](https://img.shields.io/badge/🚀_Live_App-tamed.pages.dev-8B5CF6?style=for-the-badge&logo=cloudflare&logoColor=white)](https://tamed.pages.dev/)
 [![Official Wiki](https://img.shields.io/badge/📖_Documentation-GitHub_Wiki-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://github.com/NottKoneko/Tamed/wiki)
@@ -26,7 +26,7 @@ Comprehensive user guides, persona breakdowns, developer manuals, and database s
 | :--- | :--- | :--- |
 | 📖 [**Wiki Home**](https://github.com/NottKoneko/Tamed/wiki/Home) | Main Documentation Portal, quick index, and system status. | All Users |
 | 🚀 [**User Onboarding Guide**](https://github.com/NottKoneko/Tamed/wiki/User-Onboarding-Guide) | Account creation, role selection, and 6-digit pair code account linking. | New Users |
-| 👑 [**Owner Guide**](https://github.com/NottKoneko/Tamed/wiki/Owner-Guide) | Behavior Codex task creation, calendar status logging (🟢/🟡/🔴), & reward approvals. | Owner Persona |
+| 👑 [**Owner Guide**](https://github.com/NottKoneko/Tamed/wiki/Owner-Guide) | Daily task creation, calendar status logging (🟢/🟡/🔴), & reward approvals. | Owner Persona |
 | 🦊 [**Pet Guide**](https://github.com/NottKoneko/Tamed/wiki/Pet-Guide) | Daily checklists, earning XP, mascot species customization, & reward store redemptions. | Pet Persona |
 | 🔬 [**Architecture & Database**](https://github.com/NottKoneko/Tamed/wiki/Architecture-and-Database) | Technical review, Zustand state map, Supabase SQL schema, & RLS policies. | Developers |
 | ❓ [**FAQ & Troubleshooting**](https://github.com/NottKoneko/Tamed/wiki/FAQ) | Frequently Asked Questions, offline demo mode, auto day-end reset, and security. | All Users |
@@ -45,7 +45,7 @@ Built with **React 19**, **Vite 6**, **Zustand 5**, and powered by **Supabase Po
        ├─────────────────────────────────────────────────────────────┤
        │   👑 OWNER DASHBOARD           🦊 PET DASHBOARD              │
        │   • Calendar Status (G/Y/R)    • Interactive Mascot Avatar   │
-       │   • Daily Behavior Codex       • Level & XP Bar              │
+       │   • Daily Routines & Tasks     • Level & XP Bar              │
        │   • Reward Item Catalog        • Custom Currency (Bones 🦴)  │
        │   • Instant Praise Sender      • Store Redemptions & Requests│
        │   • 6-Digit Pair Code Auth     • Habit Checklists            │
@@ -67,7 +67,7 @@ Built with **React 19**, **Vite 6**, **Zustand 5**, and powered by **Supabase Po
 ## ⚡ Core Feature Catalog
 
 ### 👑 Owner Persona Features
-* **Behavior Codex (Daily Tasks):** Create and manage custom daily checklist items for your partner with custom XP reward values.
+* **Daily Tasks & Routines:** Create and manage custom daily checklist items for your partner with custom XP reward values.
 * **Calendar Day Quality Logging:** Track routine discipline using Green 🟢, Yellow 🟡, and Red 🔴 status indicators.
 * **Reward Store & Proposal Approvals:** Review reward ideas submitted by your Pet, approve them to the active store catalog, and fulfill redemptions.
 * **Praise Transmitter & Instant Nudges:** Send visual praise cards with confetti or 1-click instant check-in nudges (*"Drink Water 💧"*, *"Time to Stretch 🐾"*).
@@ -117,5 +117,5 @@ npm run lint
 
 ## 📄 License & Credits
 
-Designed & Developed for **Tamed Ecosystem**.  
+Designed & Developed for **Tamed**.  
 Licensed under the [MIT License](LICENSE).

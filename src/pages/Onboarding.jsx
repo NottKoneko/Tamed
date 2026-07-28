@@ -173,7 +173,7 @@ export const Onboarding = () => {
           Tamed
         </h1>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '0.25rem', fontWeight: 500 }}>
-          Relationship codex & reward system for couples
+          Relationship routine & reward system for couples
         </p>
 
         {/* Stepper Progress Dots */}

@@ -6,7 +6,7 @@ This document provides a technical review of the Tamed application architecture,
 
 ## 1. System Architecture Overview
 
-Tamed uses a **Hybrid Architecture** that seamlessly supports both full real-time cloud sync via Supabase and an offline-first demo mode.
+Tamed uses a **Hybrid Architecture** that supports both full real-time cloud sync via Supabase and an offline-first demo mode.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -36,7 +36,7 @@ Tamed uses a **Hybrid Architecture** that seamlessly supports both full real-tim
 1. **`profiles`**: Stores user metadata (`id`, `uid`, `pair_code`, `role`, `username`, `points_balance`, `xp`, `level`, `pet_species`, `custom_theme_primary`).
 2. **`pairings`**: Encapsulates pair linkages (`id`, `owner_id`, `pet_id`, `custom_currency_name`, `created_at`).
 3. **`calendar_entries`**: Daily status records (`id`, `pairing_id`, `entry_date`, `status`, `notes`).
-4. **`daily_tasks`**: Behavior Codex routines (`id`, `pairing_id`, `title`, `xp_reward`, `is_completed`, `task_date`).
+4. **`daily_tasks`**: Daily task routines (`id`, `pairing_id`, `title`, `xp_reward`, `is_completed`, `task_date`).
 5. **`reward_items`**: Active store catalog items (`id`, `pairing_id`, `title`, `cost`, `description`, `icon`).
 6. **`redemptions`**: Store purchases (`id`, `pairing_id`, `reward_id`, `status`, `created_at`).
 7. **`praise_notes`**: Praise cards & head pats (`id`, `pairing_id`, `sender_id`, `message`, `note_type`).

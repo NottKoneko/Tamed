@@ -134,7 +134,7 @@ export const Home = () => {
               Connect with your partner 🔗
             </h1>
             <p style={{ fontSize: '0.825rem', opacity: 0.9, marginTop: '0.2rem', lineHeight: '1.4' }}>
-              Welcome <b>{user?.username}</b>! Connect with your partner using your pair code to unlock daily green days, behavior codex, and your shared reward store.
+              Welcome <b>{user?.username}</b>! Connect with your partner using your pair code to unlock daily green days, daily routines, and your shared reward store.
             </p>
           </div>
 

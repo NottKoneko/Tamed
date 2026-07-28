@@ -113,7 +113,7 @@ CREATE TABLE public.redemptions (
 );
 ALTER TABLE public.redemptions ENABLE ROW LEVEL SECURITY;
 
--- 8. DAILY TASKS / BEHAVIOR CODEX (Routines set by Owner)
+-- 8. DAILY TASKS & ROUTINES (Set by Owner)
 CREATE TABLE public.daily_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   pairing_id UUID REFERENCES public.pairings(id) ON DELETE CASCADE,
