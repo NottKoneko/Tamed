@@ -413,6 +413,13 @@ export const useAppStore = create((set, get) => ({
     if (!task) return;
     const newStatus = !task.is_completed;
     const xpReward = task.xp_reward || 25;
+
+    // Optimistically update store dailyTasks state immediately
+    const updatedTasks = (dailyTasks || []).map(t =>
+      t.id === taskId ? { ...t, is_completed: newStatus } : t
+    );
+    set({ dailyTasks: updatedTasks });
+
     try {
       if (isSupabaseConfigured && session) {
         await supabaseBackend.toggleDailyTask(taskId, newStatus);
@@ -436,6 +443,7 @@ export const useAppStore = create((set, get) => ({
       }
     } catch (err) {
       showToast(err.message, 'warning');
+      get().loadPairingData();
     }
   },
 
@@ -444,6 +452,13 @@ export const useAppStore = create((set, get) => ({
     const task = (dailyTasks || []).find(t => t.id === taskId);
     const wasCompleted = task?.is_completed;
     const xpReward = task?.xp_reward || 25;
+
+    // Optimistically update store dailyTasks state immediately
+    const updatedTasks = (dailyTasks || []).map(t =>
+      t.id === taskId ? { ...t, is_completed: isCompleted } : t
+    );
+    set({ dailyTasks: updatedTasks });
+
     try {
       if (isSupabaseConfigured && session) {
         await supabaseBackend.overrideDailyTask(taskId, isCompleted);
@@ -463,11 +478,16 @@ export const useAppStore = create((set, get) => ({
       showToast(isCompleted ? 'Owner override: Task marked complete! 🟢' : 'Owner override: Task marked incomplete ↩️', 'info');
     } catch (err) {
       showToast(err.message, 'warning');
+      get().loadPairingData();
     }
   },
 
   deleteDailyTask: async (taskId) => {
     const { session, showToast } = get();
+    // Optimistically update store dailyTasks state immediately
+    const updatedTasks = (get().dailyTasks || []).filter(t => t.id !== taskId);
+    set({ dailyTasks: updatedTasks });
+
     try {
       if (isSupabaseConfigured && session) {
         await supabaseBackend.deleteDailyTask(taskId);
@@ -479,6 +499,7 @@ export const useAppStore = create((set, get) => ({
       showToast('Daily task removed', 'info');
     } catch (err) {
       showToast(err.message, 'warning');
+      get().loadPairingData();
     }
   },
 
