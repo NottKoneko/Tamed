@@ -206,18 +206,6 @@ export const Settings = () => {
     { id: 'custom', label: 'Custom', icon: '✏️', name: 'Custom' }
   ];
 
-  const handleSavePetPersona = (e) => {
-    e.preventDefault();
-    updatePraiseAndSpecies(
-      species, praiseTerms, 
-      species === 'custom' ? customSpeciesName.trim() : null, 
-      species === 'custom' ? customSpeciesIcon.trim() : null
-    );
-    if (petNicknameInput.trim() !== user?.pet_nickname) {
-      updatePetNickname(petNicknameInput.trim());
-    }
-  };
-
   const handleSavePageTheme = (e) => {
     e.preventDefault();
     updateCustomTheme(pagePrimary, pageAccent, pageThemeMode);
@@ -1177,78 +1165,6 @@ export const Settings = () => {
             </div>
             <button type="submit" className="btn-primary">
               <Check size={16} /> Save Point Rules
-            </button>
-          </form>
-        </Section>
-      )}
-
-      {/* ── PET: Species Persona & Nickname ─────────────────── */}
-      {isPet && (
-        <Section
-          icon={<Heart />}
-          title="Pet Persona & Nickname"
-          subtitle="Your species identity, nickname, and praise phrase"
-          accentColor="var(--color-primary)"
-        >
-          <form onSubmit={handleSavePetPersona} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
-            <div>
-              <Label>Pet Nickname / Title</Label>
-              <input 
-                type="text" 
-                className="input-field" 
-                value={petNicknameInput} 
-                onChange={e => setPetNicknameInput(e.target.value)} 
-                placeholder="e.g. Princess Fluff, Captain Bark" 
-              />
-            </div>
-
-            <div>
-              <Label>Species Persona</Label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                {speciesOptions.map((opt) => {
-                  const active = species === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setSpecies(opt.id)}
-                      style={{
-                        padding: '0.875rem',
-                        borderRadius: 'var(--border-radius)',
-                        border: active ? `2px solid ${opt.color}` : '1.5px solid var(--color-border)',
-                        backgroundColor: active ? `${opt.color}15` : 'var(--color-surface-hover)',
-                        textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: active ? opt.color : 'var(--color-text-main)' }}>{opt.label}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>{opt.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {species === 'custom' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '0.5rem', padding: '0.875rem', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--color-surface-hover)' }}>
-                <div>
-                  <Label>Emoji</Label>
-                  <input type="text" className="input-field" value={customSpeciesIcon} onChange={e => setCustomSpeciesIcon(e.target.value)}
-                    placeholder="🐰" style={{ textAlign: 'center', fontSize: '1.2rem', padding: '0.6rem' }} maxLength={4} />
-                </div>
-                <div>
-                  <Label>Species Name</Label>
-                  <input type="text" className="input-field" value={customSpeciesName} onChange={e => setCustomSpeciesName(e.target.value)} placeholder="e.g. Bunny, Dragon" />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Label>Praise Phrase</Label>
-              <input type="text" className="input-field" value={praiseTerms} onChange={e => setPraiseTerms(e.target.value)} placeholder="e.g. Good girl! / Good boy!" />
-            </div>
-
-            <button type="submit" className="btn-primary">
-              <Check size={16} /> Save Persona & Nickname
             </button>
           </form>
         </Section>
