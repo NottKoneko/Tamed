@@ -208,14 +208,20 @@ class MockBackend {
   }
 
   // --- Points & Pairing Settings ---
-  async setPetPoints(pairingId, newPoints) {
+  async setPetPoints(pairingIdOrPetId, newPoints) {
     await delay();
-    const pairing = db.pairings.find(p => p.id === pairingId);
-    if (!pairing) throw new Error("Pairing not found");
-    const pet = db.profiles.find(p => p.id === pairing.pet_id);
+    const targetBalance = Math.max(0, parseInt(newPoints, 10) || 0);
+    // Find pet profile either directly by pet profile ID or by pairing ID
+    let pet = db.profiles.find(p => p.id === pairingIdOrPetId);
+    if (!pet) {
+      const pairing = db.pairings.find(p => p.id === pairingIdOrPetId);
+      if (pairing) {
+        pet = db.profiles.find(p => p.id === pairing.pet_id);
+      }
+    }
     if (!pet) throw new Error("Pet profile not found");
     
-    pet.points_balance = Math.max(0, newPoints);
+    pet.points_balance = targetBalance;
     this.notify('PROFILE_UPDATED', pet);
     return pet;
   }
@@ -293,6 +299,10 @@ class MockBackend {
   async getPairingForUser(userId) {
     await delay();
     return db.pairings.find(p => p.owner_id === userId || p.pet_id === userId);
+  }
+
+  async getPairing(userId) {
+    return this.getPairingForUser(userId);
   }
 
   async unpair(pairingId) {
@@ -395,16 +405,16 @@ class MockBackend {
     return task;
   }
 
-  async toggleDailyTask(taskId) {
+  async toggleDailyTask(taskId, isCompleted) {
     await delay();
     const task = db.daily_tasks.find(t => t.id === taskId);
     if (!task) throw new Error("Task not found");
 
-    task.is_completed = !task.is_completed;
+    task.is_completed = isCompleted !== undefined ? Boolean(isCompleted) : !task.is_completed;
     const pairing = db.pairings.find(p => p.id === task.pairing_id);
 
     if (task.is_completed && pairing) {
-      this.addXP(pairing.pet_id, task.xp_reward || 25); // Award +25 XP
+      this.addXP(pairing.pet_id, task.xp_reward || 25);
     }
 
     this.notify('DAILY_TASK_UPDATED', task);
@@ -426,6 +436,18 @@ class MockBackend {
 
     this.notify('DAILY_TASK_UPDATED', task);
     return task;
+  }
+
+  async verifySecurityPin(userId, pin) {
+    await delay();
+    const profile = db.profiles.find(p => p.id === userId);
+    if (!profile || !profile.pairing_pin) return { success: true, locked: false };
+    const isMatch = profile.pairing_pin === pin;
+    return {
+      success: isMatch,
+      locked: false,
+      message: isMatch ? '' : 'Incorrect Security PIN code'
+    };
   }
 
   async deleteDailyTask(taskId) {
@@ -584,6 +606,36 @@ class MockBackend {
     redemption.status = status;
     this.notify('REDEMPTION_UPDATED', redemption);
     return redemption;
+  }
+
+  async cancelRedemption(redemptionId) {
+    await delay();
+    const idx = db.redemptions.findIndex(r => r.id === redemptionId);
+    if (idx === -1) throw new Error("Redemption request not found");
+
+    const redemption = db.redemptions[idx];
+    if (redemption.status !== 'pending') {
+      throw new Error("Once approved or denied, redemption requests cannot be taken back.");
+    }
+
+    const pet = db.profiles.find(p => p.id === redemption.pet_id);
+    if (pet) {
+      pet.points_balance += redemption.points_spent;
+      this.notify('PROFILE_UPDATED', pet);
+    }
+
+    db.redemptions.splice(idx, 1);
+    this.notify('REDEMPTION_DELETED', { redemptionId });
+    return true;
+  }
+
+  async clearRedemptionHistory(redemptionId) {
+    await delay();
+    const idx = db.redemptions.findIndex(r => r.id === redemptionId);
+    if (idx === -1) return true;
+    db.redemptions.splice(idx, 1);
+    this.notify('REDEMPTION_DELETED', { redemptionId });
+    return true;
   }
 }
 

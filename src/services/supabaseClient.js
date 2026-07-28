@@ -108,6 +108,13 @@ export const supabaseBackend = {
     return data;
   },
 
+  overrideDailyTask: async (taskId, isCompleted = true) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('daily_tasks').update({ is_completed: isCompleted }).eq('id', taskId).select().single();
+    if (error) throw error;
+    return data;
+  },
+
   deleteDailyTask: async (taskId) => {
     if (!supabase) return true;
     const { error } = await supabase.from('daily_tasks').delete().eq('id', taskId);
@@ -216,6 +223,12 @@ export const supabaseBackend = {
 
   processRedemption: async (redemptionId, status) => {
     if (!supabase) return null;
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('process_redemption', {
+      p_redemption_id: redemptionId,
+      p_status: status
+    });
+    if (!rpcErr) return rpcRes;
+
     const { data: redemption, error } = await supabase.from('redemptions').update({ status }).eq('id', redemptionId).select().single();
     if (error) throw error;
 
@@ -226,6 +239,35 @@ export const supabaseBackend = {
       }
     }
     return redemption;
+  },
+
+  cancelRedemption: async (redemptionId) => {
+    if (!supabase) return null;
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('cancel_redemption', {
+      p_redemption_id: redemptionId
+    });
+    if (!rpcErr) return rpcRes;
+
+    const { data: redemption } = await supabase.from('redemptions').select('*').eq('id', redemptionId).maybeSingle();
+    if (redemption) {
+      if (redemption.status !== 'pending') {
+        throw new Error("Once approved or denied, redemption requests cannot be taken back.");
+      }
+      const { data: petProfile } = await supabase.from('profiles').select('points_balance').eq('id', redemption.pet_id).single();
+      if (petProfile) {
+        await supabase.from('profiles').update({ points_balance: (petProfile.points_balance || 0) + redemption.points_spent }).eq('id', redemption.pet_id);
+      }
+    }
+    const { error } = await supabase.from('redemptions').delete().eq('id', redemptionId);
+    if (error) throw error;
+    return true;
+  },
+
+  clearRedemptionHistory: async (redemptionId) => {
+    if (!supabase) return null;
+    const { error } = await supabase.from('redemptions').delete().eq('id', redemptionId);
+    if (error) throw error;
+    return true;
   },
 
   // Praise Notes

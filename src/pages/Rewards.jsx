@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { formatCurrency, getCurrencyInfo } from '../utils/currency';
 import { PinModal } from '../components/PinModal';
-import { Gift, Plus, Trash2, CheckCircle2, XCircle, Clock, Sparkles, Send, Tag, ShoppingBag, History, Lock } from 'lucide-react';
+import { Gift, Plus, Trash2, CheckCircle2, XCircle, Clock, Sparkles, Send, Tag, ShoppingBag, History, Lock, MoreVertical, RotateCcw } from 'lucide-react';
 
 export const Rewards = () => {
   const { 
@@ -18,6 +18,8 @@ export const Rewards = () => {
     redeemStoreItem,
     processProposal,
     processRedemption,
+    cancelRedemption,
+    clearRedemptionHistory,
     showToast,
     verifyPin,
     setActiveTab
@@ -43,6 +45,9 @@ export const Rewards = () => {
 
   // Owner point cost assignment per proposal ID
   const [assignedCosts, setAssignedCosts] = useState({});
+
+  // 3-dots action menu dropdown state
+  const [activeMenuId, setActiveMenuId] = useState(null);
 
   const handleCostChange = (propId, val) => {
     setAssignedCosts((prev) => ({ ...prev, [propId]: val }));
@@ -456,28 +461,161 @@ export const Rewards = () => {
 
       {/* PET: Redemptions History */}
       {!isOwner && (redemptions || []).length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem', position: 'relative' }}>
           <h2 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <History size={20} color="var(--color-green)" /> My Point Redemptions
           </h2>
 
+          {/* Dismiss Backdrop */}
+          {activeMenuId && (
+            <div 
+              style={{ position: 'fixed', inset: 0, zIndex: 90 }} 
+              onClick={() => setActiveMenuId(null)} 
+            />
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {redemptions.map((red) => (
-              <div key={red.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem' }}>
-                <div>
-                  <strong style={{ fontSize: '0.95rem', display: 'block', marginBottom: '0.25rem' }}>{red.title}</strong>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                    Redeemed on {new Date(red.created_at).toLocaleDateString()}
-                  </span>
+            {redemptions.map((red) => {
+              const isActive = activeMenuId === red.id;
+              return (
+                <div 
+                  key={red.id} 
+                  className="card" 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    justify: 'space-between', 
+                    padding: '0.875rem 0.75rem 0.875rem 1.125rem', 
+                    position: 'relative',
+                    gap: '0.5rem',
+                    zIndex: isActive ? 100 : 1,
+                    transition: 'z-index 0s, transform 0.2s ease, box-shadow 0.2s ease'
+                  }}
+                >
+                  {/* Left: Title & Date */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <strong style={{ fontSize: '0.95rem', display: 'block', marginBottom: '0.2rem', wordBreak: 'break-word' }}>
+                      {red.title}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                      Redeemed on {new Date(red.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Middle-Right: Points & Status Badge */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-red)' }}>
+                      -{formatCurrency(red.points_spent, activeSpecies, true, pairing)}
+                    </span>
+                    {redemptionStatusBadge[red.status]}
+                  </div>
+
+                  {/* Far Right End: 3-Dots Action Menu */}
+                  <div style={{ position: 'relative', flexShrink: 0, marginLeft: '0.125rem' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(isActive ? null : red.id);
+                      }}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: isActive ? 'var(--color-surface-hover)' : 'transparent',
+                        border: isActive ? '1px solid var(--color-primary)' : '1px solid transparent',
+                        cursor: 'pointer',
+                        color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                      title="More options"
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+
+                    {isActive && (
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 'calc(100% + 6px)',
+                          backgroundColor: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '12px',
+                          boxShadow: '0 16px 36px -4px rgba(0, 0, 0, 0.3), 0 6px 16px -2px rgba(0, 0, 0, 0.15)',
+                          zIndex: 110,
+                          minWidth: '240px',
+                          padding: '0.375rem',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)'
+                        }}
+                      >
+                        {red.status === 'pending' ? (
+                          <button
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              cancelRedemption(red.id);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.75rem 0.875rem',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.625rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              color: 'var(--color-red)',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              transition: 'background-color 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            <RotateCcw size={16} />
+                            <div>
+                              <span style={{ display: 'block' }}>Take Back Request</span>
+                              <span style={{ fontSize: '0.725rem', opacity: 0.8, fontWeight: 400 }}>Refund {formatCurrency(red.points_spent, activeSpecies, false, pairing)}</span>
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              clearRedemptionHistory(red.id);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.75rem 0.875rem',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.625rem',
+                              fontSize: '0.85rem',
+                              color: 'var(--color-text-muted)',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              transition: 'background-color 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            <Trash2 size={16} /> Clear from History
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-red)', display: 'block', marginBottom: '0.25rem' }}>
-                    -{formatCurrency(red.points_spent, activeSpecies, true, pairing)}
-                  </span>
-                  {redemptionStatusBadge[red.status]}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

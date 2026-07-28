@@ -178,6 +178,7 @@ CREATE POLICY "Only owners can modify reward items" ON public.reward_items FOR A
 CREATE POLICY "Users can view redemptions for their pairings" ON public.redemptions FOR SELECT USING (is_user_in_pairing(pairing_id));
 CREATE POLICY "Pets can insert redemptions" ON public.redemptions FOR INSERT WITH CHECK (auth.uid() = pet_id AND auth.uid() IN (SELECT pet_id FROM pairings WHERE id = pairing_id));
 CREATE POLICY "Only owners can update redemptions" ON public.redemptions FOR UPDATE USING (auth.uid() IN (SELECT owner_id FROM pairings WHERE id = pairing_id));
+CREATE POLICY "Pets and owners can delete redemptions" ON public.redemptions FOR DELETE USING (is_user_in_pairing(pairing_id));
 
 -- Daily Tasks
 CREATE POLICY "Users can view daily tasks for their pairings" ON public.daily_tasks FOR SELECT USING (is_user_in_pairing(pairing_id));
@@ -371,5 +372,68 @@ BEGIN
       );
     END IF;
   END IF;
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. RPC: Process Redemption (Approve or Deny with points refund)
+CREATE OR REPLACE FUNCTION process_redemption(p_redemption_id UUID, p_status redemption_status)
+RETURNS JSONB AS $func$
+DECLARE
+  v_redemption RECORD;
+BEGIN
+  SELECT * INTO v_redemption FROM public.redemptions WHERE id = p_redemption_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Redemption request not found';
+  END IF;
+
+  UPDATE public.redemptions 
+  SET status = p_status 
+  WHERE id = p_redemption_id;
+
+  -- Refund points if denied and was not previously denied
+  IF p_status = 'denied' AND v_redemption.status != 'denied' THEN
+    UPDATE public.profiles 
+    SET points_balance = COALESCE(points_balance, 0) + v_redemption.points_spent 
+    WHERE id = v_redemption.pet_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'id', p_redemption_id,
+    'status', p_status,
+    'pet_id', v_redemption.pet_id,
+    'points_spent', v_redemption.points_spent
+  );
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. RPC: Cancel Redemption (Take Back Request & Refund Points - Pending Only)
+CREATE OR REPLACE FUNCTION cancel_redemption(p_redemption_id UUID)
+RETURNS JSONB AS $func$
+DECLARE
+  v_redemption RECORD;
+BEGIN
+  SELECT * INTO v_redemption FROM public.redemptions WHERE id = p_redemption_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Redemption request not found';
+  END IF;
+
+  -- Block taking back requests once approved or denied
+  IF v_redemption.status != 'pending' THEN
+    RAISE EXCEPTION 'Once approved or denied, redemption requests cannot be taken back.';
+  END IF;
+
+  -- Delete redemption record
+  DELETE FROM public.redemptions WHERE id = p_redemption_id;
+
+  -- Refund points spent back to Pet profile
+  UPDATE public.profiles 
+  SET points_balance = COALESCE(points_balance, 0) + v_redemption.points_spent 
+  WHERE id = v_redemption.pet_id;
+
+  RETURN jsonb_build_object(
+    'id', p_redemption_id,
+    'status', 'cancelled',
+    'points_refunded', v_redemption.points_spent
+  );
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER;

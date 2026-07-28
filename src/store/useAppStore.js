@@ -318,7 +318,7 @@ export const useAppStore = create((set, get) => ({
     const { session, showToast } = get();
     try {
       if (isSupabaseConfigured && session) {
-        await supabaseBackend.toggleDailyTask(taskId, isCompleted);
+        await supabaseBackend.overrideDailyTask(taskId, isCompleted);
       } else {
         await mockBackend.overrideDailyTask(taskId, isCompleted);
       }
@@ -386,7 +386,7 @@ export const useAppStore = create((set, get) => ({
       if (isSupabaseConfigured && session) {
         await supabaseBackend.setPetPoints(petId, targetBalance);
       } else {
-        await mockBackend.setPetPoints(pairing.id, targetBalance);
+        await mockBackend.setPetPoints(petId, targetBalance);
       }
       playSound('click');
     } catch (err) {
@@ -489,6 +489,37 @@ export const useAppStore = create((set, get) => ({
       playSound(status === 'approved' ? 'levelUp' : 'click');
       if (status === 'approved') triggerConfetti();
       showToast(status === 'approved' ? 'Redemption Approved & Fulfilled! 🎉' : 'Redemption Denied (Points refunded)', 'info');
+      await get().loadPairingData();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  cancelRedemption: async (redemptionId) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.cancelRedemption(redemptionId);
+      } else {
+        await mockBackend.cancelRedemption(redemptionId);
+      }
+      playSound('click');
+      showToast('Redemption request taken back! Points refunded ↩️', 'info');
+      await get().loadPairingData();
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  clearRedemptionHistory: async (redemptionId) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.clearRedemptionHistory(redemptionId);
+      } else {
+        await mockBackend.clearRedemptionHistory(redemptionId);
+      }
+      showToast('Cleared from redemption history', 'info');
       await get().loadPairingData();
     } catch (err) {
       showToast(err.message, 'warning');
@@ -651,12 +682,7 @@ export const useAppStore = create((set, get) => ({
     if (isSupabaseConfigured && session) {
       return await supabaseBackend.verifySecurityPin(user.id, inputPin);
     } else {
-      const isMatch = user.pairing_pin === inputPin;
-      return {
-        success: isMatch,
-        locked: false,
-        message: isMatch ? '' : 'Incorrect Security PIN code'
-      };
+      return await mockBackend.verifySecurityPin(user.id, inputPin);
     }
   },
 
