@@ -10,11 +10,21 @@ import { sanitizeText, clampInput } from '../utils/sanitizer';
 const sendNativeNotification = (title, body) => {
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     try {
-      new Notification(title, {
+      const options = {
         body: body || 'Tamed Check-in Alert 🐾',
-        icon: '/icon-192.png',
-        badge: '/icon-192.png'
-      });
+        icon: '/favicon.svg',
+        badge: '/favicon.svg'
+      };
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          reg.showNotification(title, options);
+        }).catch(() => {
+          new Notification(title, options);
+        });
+      } else {
+        new Notification(title, options);
+      }
     } catch (e) {
       console.warn('Native Notification call failed:', e);
     }
