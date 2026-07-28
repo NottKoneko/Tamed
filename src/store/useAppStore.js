@@ -6,6 +6,7 @@ import { triggerConfetti } from '../utils/confetti';
 import { applyCustomTheme } from '../utils/theme';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { sanitizeText, clampInput } from '../utils/sanitizer';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const sendNativeNotification = (title, body) => {
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
@@ -375,7 +376,7 @@ export const useAppStore = create((set, get) => ({
     const { dailyTasks, pairing } = get();
     if (!pairing || !dailyTasks || dailyTasks.length === 0) return;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const total = dailyTasks.length;
     const completed = dailyTasks.filter(t => t.is_completed).length;
 

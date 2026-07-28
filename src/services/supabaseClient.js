@@ -10,6 +10,8 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseKey)
   : null;
 
+import { getLocalDateString } from '../utils/dateUtils';
+
 export const supabaseBackend = {
   // Profiles
   getProfile: async (userId) => {
@@ -118,7 +120,7 @@ export const supabaseBackend = {
       title,
       xp_reward: 25,
       is_completed: false,
-      task_date: new Date().toISOString().split('T')[0]
+      task_date: getLocalDateString()
     };
     const { data, error } = await supabase.from('daily_tasks').insert([taskData]).select().single();
     if (error) throw error;

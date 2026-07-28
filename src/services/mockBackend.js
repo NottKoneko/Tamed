@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { getLocalDateString } from '../utils/dateUtils';
 
 // In-memory store
 let db = {
@@ -69,9 +70,9 @@ const seedData = () => {
 
   // Behavior Codex (Daily Tasks)
   db.daily_tasks.push(
-    { id: uuidv4(), pairing_id: pairingId, title: 'Drink 2L of Fresh Water 💧', xp_reward: 25, is_completed: true, task_date: new Date().toISOString().split('T')[0] },
-    { id: uuidv4(), pairing_id: pairingId, title: '15 Minutes Outdoor Walk / Stretch 🐾', xp_reward: 25, is_completed: false, task_date: new Date().toISOString().split('T')[0] },
-    { id: uuidv4(), pairing_id: pairingId, title: 'Bedtime by 11:00 PM 🛌', xp_reward: 25, is_completed: false, task_date: new Date().toISOString().split('T')[0] }
+    { id: uuidv4(), pairing_id: pairingId, title: 'Drink 2L of Fresh Water 💧', xp_reward: 25, is_completed: true, task_date: getLocalDateString() },
+    { id: uuidv4(), pairing_id: pairingId, title: '15 Minutes Outdoor Walk / Stretch 🐾', xp_reward: 25, is_completed: false, task_date: getLocalDateString() },
+    { id: uuidv4(), pairing_id: pairingId, title: 'Bedtime by 11:00 PM 🛌', xp_reward: 25, is_completed: false, task_date: getLocalDateString() }
   );
 
   // Sample Praise Note
@@ -414,7 +415,7 @@ class MockBackend {
       title,
       xp_reward: 25,
       is_completed: false,
-      task_date: new Date().toISOString().split('T')[0],
+      task_date: getLocalDateString(),
       created_at: new Date().toISOString()
     };
     db.daily_tasks.push(task);
