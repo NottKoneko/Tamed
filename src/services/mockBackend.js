@@ -404,7 +404,15 @@ class MockBackend {
   // --- Behavior Codex (Daily Tasks) ---
   async getDailyTasks(pairingId) {
     await delay();
-    return db.daily_tasks.filter(t => t.pairing_id === pairingId);
+    const todayStr = getLocalDateString();
+    const tasks = db.daily_tasks.filter(t => t.pairing_id === pairingId);
+    tasks.forEach(t => {
+      if (t.is_completed && (!t.task_date || t.task_date < todayStr)) {
+        t.is_completed = false;
+        t.task_date = todayStr;
+      }
+    });
+    return tasks;
   }
 
   async createDailyTask(pairingId, title) {
@@ -429,6 +437,7 @@ class MockBackend {
     if (!task) throw new Error("Task not found");
 
     task.is_completed = isCompleted !== undefined ? Boolean(isCompleted) : !task.is_completed;
+    task.task_date = getLocalDateString();
     const pairing = db.pairings.find(p => p.id === task.pairing_id);
 
     if (task.is_completed && pairing) {
@@ -446,6 +455,7 @@ class MockBackend {
 
     const wasCompleted = task.is_completed;
     task.is_completed = isCompleted;
+    task.task_date = getLocalDateString();
     const pairing = db.pairings.find(p => p.id === task.pairing_id);
 
     if (isCompleted && !wasCompleted && pairing) {

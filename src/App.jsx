@@ -20,6 +20,7 @@ export default function App() {
   const session = useAppStore((state) => state.session);
   const user = useAppStore((state) => state.user);
   const activeTab = useAppStore((state) => state.activeTab);
+  const checkDayRollover = useAppStore((state) => state.checkDayRollover);
   const activePraiseModal = useAppStore((state) => state.activePraiseModal);
   const setActivePraiseModal = useAppStore((state) => state.setActivePraiseModal);
   
@@ -51,6 +52,23 @@ export default function App() {
       loadInitialData();
     }
   }, [session, loadInitialData]);
+
+  // Monitor day rollover (e.g. midnight transition or returning to tab on a new day)
+  useEffect(() => {
+    const handleFocus = () => {
+      checkDayRollover();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(() => {
+      checkDayRollover();
+    }, 30000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
+  }, [checkDayRollover]);
 
   // Loading state splash
   if (!authInitialized) {

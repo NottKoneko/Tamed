@@ -52,6 +52,18 @@ export const useAppStore = create((set, get) => ({
   toast: null,
   isLoading: false,
   realtimeChannel: null,
+  lastLoadedDate: null,
+
+  checkDayRollover: async () => {
+    const { lastLoadedDate, user, pairing } = get();
+    if (!user || !pairing) return;
+    const todayStr = getLocalDateString();
+    if (lastLoadedDate && lastLoadedDate !== todayStr) {
+      set({ lastLoadedDate: todayStr });
+      await get().loadPairingData();
+      await get().evaluateAutoCalendarStatus();
+    }
+  },
 
   toggleSound: () => {
     const next = !get().soundEnabled;
@@ -202,7 +214,7 @@ export const useAppStore = create((set, get) => ({
         const species = currentProfile.role === 'pet' ? currentProfile.pet_species : (partnerProfile?.pet_species || 'puppy');
         document.documentElement.setAttribute('data-theme', species || 'puppy');
 
-        set({ partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders });
+        set({ partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders, lastLoadedDate: getLocalDateString() });
 
         // Auto-popup unread Praise Cards & Instant Nudges received recently
         if (praiseNotes && praiseNotes.length > 0) {

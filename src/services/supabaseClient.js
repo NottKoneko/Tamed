@@ -140,9 +140,27 @@ export const supabaseBackend = {
   // Daily Tasks
   getDailyTasks: async (pairingId) => {
     if (!supabase) return [];
+    const todayStr = getLocalDateString();
     const { data, error } = await supabase.from('daily_tasks').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: true });
     if (error) throw error;
-    return data || [];
+    if (!data || data.length === 0) return [];
+
+    // Auto-reset tasks completed on previous days
+    const staleTasks = data.filter(t => t.is_completed && (!t.task_date || t.task_date < todayStr));
+    if (staleTasks.length > 0) {
+      const staleIds = staleTasks.map(t => t.id);
+      await supabase
+        .from('daily_tasks')
+        .update({ is_completed: false, task_date: todayStr })
+        .in('id', staleIds);
+
+      staleTasks.forEach(t => {
+        t.is_completed = false;
+        t.task_date = todayStr;
+      });
+    }
+
+    return data;
   },
 
   createDailyTask: async (pairingId, title) => {
@@ -161,14 +179,14 @@ export const supabaseBackend = {
 
   toggleDailyTask: async (taskId, isCompleted) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('daily_tasks').update({ is_completed: isCompleted }).eq('id', taskId).select().single();
+    const { data, error } = await supabase.from('daily_tasks').update({ is_completed: isCompleted, task_date: getLocalDateString() }).eq('id', taskId).select().single();
     if (error) throw error;
     return data;
   },
 
   overrideDailyTask: async (taskId, isCompleted = true) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('daily_tasks').update({ is_completed: isCompleted }).eq('id', taskId).select().single();
+    const { data, error } = await supabase.from('daily_tasks').update({ is_completed: isCompleted, task_date: getLocalDateString() }).eq('id', taskId).select().single();
     if (error) throw error;
     return data;
   },
