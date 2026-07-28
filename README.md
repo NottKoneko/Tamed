@@ -2,12 +2,19 @@
 
 > **The Ultimate Gamified Routine Tracking, Behavioral Positive Reinforcement & Reward Management Ecosystem for Couples & Partners.**
 
+[![Live Web Application](https://img.shields.io/badge/🚀_Live_App-tamed.pages.dev-8B5CF6?style=for-the-badge&logo=cloudflare&logoColor=white)](https://tamed.pages.dev/)
 [![React Version](https://img.shields.io/badge/React-19.2.7-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.11-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase-JS_v2.110-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Deployment](https://img.shields.io/badge/Deploy-Cloudflare_Pages-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://pages.cloudflare.com/)
-[![Linter](https://img.shields.io/badge/Code_Quality-Oxlint-FF69B4?style=for-the-badge)](https://oxc.rs/)
+[![Deployment](https://img.shields.io/badge/Deploy-Cloudflare_Pages-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://tamed.pages.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+
+---
+
+> [!IMPORTANT]
+> ### 🌐 Official Live Web Application
+> **Access Tamed directly in your browser:** **[https://tamed.pages.dev/](https://tamed.pages.dev/)**  
+> Using **[tamed.pages.dev](https://tamed.pages.dev/)** is the **preferred and primary way to use the application**. No local installation, code build, or server setup is required!
 
 ---
 
@@ -15,10 +22,12 @@
 
 **Tamed** (formerly *Puppy Schedule*) is a state-of-the-art, mobile-first web application created to transform daily routine logging, accountability, and relationship dynamics into an engaging, gamified experience. 
 
-Built with **React 19**, **Vite 5**, **Zustand 5**, and powered by **Supabase PostgreSQL** with real-time sync, Tamed bridges the gap between daily discipline and playful rewards. Whether tracking habits, setting daily routines, issuing real-time praise, or redeeming custom treats, Tamed delivers a tailored experience for both **Master / Owner** and **Pet / Submissive** roles.
+Built with **React 19**, **Vite 5**, **Zustand 5**, and powered by **Supabase PostgreSQL** with real-time sync, Tamed bridges the gap between daily discipline and playful rewards. Accessible instantly at **[tamed.pages.dev](https://tamed.pages.dev/)**, Tamed delivers a tailored experience for both **Master / Owner** and **Pet / Submissive** roles.
 
 ```
        ┌─────────────────────────────────────────────────────────────┐
+       │   🌐 OFFICIAL WEB APP: https://tamed.pages.dev/              │
+       ├─────────────────────────────────────────────────────────────┤
        │   👑 OWNER DASHBOARD           🦊 PET DASHBOARD              │
        │   • Calendar Status (G/Y/R)    • Interactive Mascot Avatar   │
        │   • Daily Behavior Codex       • Level & XP Bar              │
@@ -69,9 +78,10 @@ Built with **React 19**, **Vite 5**, **Zustand 5**, and powered by **Supabase Po
     - [Guide 3: Customizing Rewards \& Processing Redemptions](#guide-3-customizing-rewards--processing-redemptions)
     - [Guide 4: Sending Praise Notes \& Head Pats](#guide-4-sending-praise-notes--head-pats)
     - [Guide 5: Security PIN Setup \& Lockout Recovery](#guide-5-security-pin-setup--lockout-recovery)
+    - [Guide 6: Adding Tamed to iOS Home Screen (Web App / PWA)](#guide-6-adding-tamed-to-ios-home-screen-web-app--pwa)
   - [🛠️ Developer \& Setup Guides](#️-developer--setup-guides)
     - [1. Prerequisites](#1-prerequisites)
-    - [2. Local Development Setup](#2-local-development-setup)
+    - [2. Local Development \& Personal GitHub Setup](#2-local-development--personal-github-repository-setup)
     - [3. Environment Variables Configuration](#3-environment-variables-configuration)
     - [4. Supabase Database Deployment](#4-supabase-database-deployment)
     - [5. Building, Previewing \& Linting](#5-building-previewing--linting)
@@ -81,7 +91,7 @@ Built with **React 19**, **Vite 5**, **Zustand 5**, and powered by **Supabase Po
     - [Utility Module Inventory](#utility-module-inventory)
     - [Zustand State Store Map](#zustand-state-store-map)
   - [🎨 Design System \& Aesthetics](#-design-system--aesthetics)
-  - [❓ Troubleshooting \& Frequently Asked Questions](#-troubleshooting--frequently-asked-questions)
+  - [❓ Website \& Web App Frequently Asked Questions](#-website--web-app-frequently-asked-questions)
   - [📄 License \& Credits](#-license--credits)
 
 ---
@@ -378,6 +388,18 @@ If environment variables `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` are not
 
 ---
 
+### Guide 6: Adding Tamed to iOS Home Screen (Web App / PWA)
+
+To run Tamed as an immersive, full-screen standalone application on your iPhone or iPad without Safari browser URL bars:
+
+1. **Open Safari**: Navigate to **[https://tamed.pages.dev/](https://tamed.pages.dev/)** in iOS Safari.
+2. **Tap Share Icon**: Tap the **Share** button ⎋ (the square with an arrow pointing up) located in the Safari toolbar.
+3. **Select "Add to Home Screen"**: Scroll down the options list and tap **Add to Home Screen** ➕.
+4. **Confirm App Name**: Confirm the application title as **Tamed** and tap **Add** in the top-right corner.
+5. **Launch as Native Web App**: Tamed will now appear on your iOS Home Screen with its custom mascot icon 🐾. Launching it from your Home Screen opens Tamed in full-screen Web App mode with persistent login state!
+
+---
+
 ## 🛠️ Developer & Setup Guides
 
 ### 1. Prerequisites
@@ -550,26 +572,54 @@ Tamed employs a modern, mobile-first design system driven by CSS Custom Properti
 
 ---
 
-## ❓ Troubleshooting & Frequently Asked Questions
+## ❓ Website & Web App Frequently Asked Questions
 
 <details>
-<summary><b>Q: How do I reset a lost Security PIN?</b></summary>
+<summary><b>Q: What is the recommended way to access Tamed?</b></summary>
 <p>
-If connected to Supabase, an Owner can reset their Security PIN directly in the <code>profiles</code> table by updating the <code>pairing_pin</code> column, or by using the reset PIN option in the <b>Settings</b> tab after confirming account credentials.
+The primary and recommended way to use Tamed is directly on the official web application at <b><a href="https://tamed.pages.dev/">https://tamed.pages.dev/</a></b>. No installation, code compilation, or manual server setup is required.
 </p>
 </details>
 
 <details>
-<summary><b>Q: Can I use Tamed without a Supabase cloud database?</b></summary>
+<summary><b>Q: How do I install Tamed as a standalone app on iOS or Android?</b></summary>
 <p>
-Yes! Tamed automatically falls back to an offline local storage mock engine if <code>VITE_SUPABASE_URL</code> is not provided in environment variables. All features can be evaluated locally.
+Open <b><a href="https://tamed.pages.dev/">tamed.pages.dev</a></b> in mobile Safari (iOS) or Chrome (Android). On iOS, tap <b>Share -> Add to Home Screen</b>. On Android, tap the menu (3 dots) -> <b>Add to Home screen</b>. This creates a full-screen app icon on your Home Screen without browser address bars!
 </p>
 </details>
 
 <details>
-<summary><b>Q: How are level-ups calculated?</b></summary>
+<summary><b>Q: Do my partner and I need to be on the same Wi-Fi network or device?</b></summary>
 <p>
-XP accumulation follows a progressive formula: <code>Level = Math.floor(Total_XP / 100) + 1</code>. Completing daily tasks grants +25 XP, and logging Green calendar days grants +50 XP.
+No! Because <b><a href="https://tamed.pages.dev/">tamed.pages.dev</a></b> is powered by a real-time cloud backend (Supabase PostgreSQL), you and your partner can use the website from anywhere in the world on different devices. When the Owner logs a calendar status or transmits praise, the Pet's website view updates instantly via WebSockets.
+</p>
+</details>
+
+<details>
+<summary><b>Q: Will my web app stay logged in when I close my mobile browser?</b></summary>
+<p>
+Yes! Tamed securely persists your session tokens and active pairing in browser local storage. When launched from your iOS or Android Home Screen, your account session, pairing state, and theme preferences remain active automatically.
+</p>
+</details>
+
+<details>
+<summary><b>Q: How do I reset a forgotten Security PIN on the web app?</b></summary>
+<p>
+If an Owner forgets their 4-digit administrative PIN, open the <b>Settings</b> tab on the website, select <b>Security & PIN</b>, and click <b>Reset PIN</b> to re-authenticate with account credentials. Alternatively, if self-hosting, reset the <code>pairing_pin</code> column in the <code>profiles</code> table via Supabase SQL Editor.
+</p>
+</details>
+
+<details>
+<summary><b>Q: What happens if my internet connection drops while using the website?</b></summary>
+<p>
+Tamed features an automatic client-side fallback engine. If network connectivity drops while browsing <b><a href="https://tamed.pages.dev/">tamed.pages.dev</a></b>, state updates are temporarily managed locally so you can continue interacting with the UI seamlessly.
+</p>
+</details>
+
+<details>
+<summary><b>Q: How are level progression and daily points calculated on the website?</b></summary>
+<p>
+XP accumulation follows a progressive formula: <code>Level = Math.floor(Total_XP / 100) + 1</code>. Completing daily routine tasks awards +25 XP per item. Logging a 🟢 Green calendar day awards full configured points +50 XP, 🟡 Yellow awards partial points, and 🔴 Red awards 0 points.
 </p>
 </details>
 
