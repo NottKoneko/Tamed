@@ -116,88 +116,96 @@ export const THEME_PRESETS = [
 ];
 
 export const applyCustomTheme = (profile) => {
-  const root = document.documentElement;
+  const updateThemeDOM = () => {
+    const root = document.documentElement;
 
-  // Clear previous inline styles so base resets apply cleanly
-  root.style.cssText = '';
+    // Clear previous inline styles so base resets apply cleanly
+    root.style.cssText = '';
 
-  const species = profile?.pet_species || 'custom';
-  root.setAttribute('data-theme', species);
+    const species = profile?.pet_species || 'custom';
+    root.setAttribute('data-theme', species);
 
-  const customPrimary = profile?.custom_theme_primary;
-  const customAccent = profile?.custom_theme_accent;
-  const customMode = profile?.custom_theme_mode || 'light';
+    const customPrimary = profile?.custom_theme_primary;
+    const customAccent = profile?.custom_theme_accent;
+    const customMode = profile?.custom_theme_mode || 'light';
 
-  const modeConfig = THEME_MODES[customMode] || THEME_MODES.light;
-  const isDarkMode = customMode === 'dark' || customMode === 'dark2';
+    const modeConfig = THEME_MODES[customMode] || THEME_MODES.light;
+    const isDarkMode = customMode === 'dark' || customMode === 'dark2';
 
-  // Determine primary & accent color fallbacks based on species
-  let primary = customPrimary;
-  let accent = customAccent;
+    // Determine primary & accent color fallbacks based on species
+    let primary = customPrimary;
+    let accent = customAccent;
 
-  if (!primary) {
-    if (species === 'puppy') primary = '#ec4899';
-    else if (species === 'kitty') primary = '#6366f1';
-    else if (species === 'fox') primary = '#ea580c';
-    else primary = '#8b5cf6';
-  }
+    if (!primary) {
+      if (species === 'puppy') primary = '#ec4899';
+      else if (species === 'kitty') primary = '#6366f1';
+      else if (species === 'fox') primary = '#ea580c';
+      else primary = '#8b5cf6';
+    }
 
-  if (!accent) {
-    if (species === 'puppy') accent = '#a855f7';
-    else if (species === 'kitty') accent = '#a855f7';
-    else if (species === 'fox') accent = '#d97706';
-    else accent = '#ec4899';
-  }
+    if (!accent) {
+      if (species === 'puppy') accent = '#a855f7';
+      else if (species === 'kitty') accent = '#a855f7';
+      else if (species === 'fox') accent = '#d97706';
+      else accent = '#ec4899';
+    }
 
-  // Set Accent Colors
-  root.style.setProperty('--color-primary', primary);
-  root.style.setProperty('--color-accent', accent);
-  root.style.setProperty('--gradient-hero', `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`);
-  root.style.setProperty('--shadow-glow', `0 0 32px ${primary}50`);
+    // Set Accent Colors
+    root.style.setProperty('--color-primary', primary);
+    root.style.setProperty('--color-accent', accent);
+    root.style.setProperty('--gradient-hero', `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`);
+    root.style.setProperty('--shadow-glow', `0 0 32px ${primary}50`);
 
-  // High contrast adjustments for dark vs light modes
-  if (isDarkMode) {
-    root.style.setProperty('--color-primary-dark', adjustBrightness(primary, 30));
-    root.style.setProperty('--color-primary-light', `${primary}28`);
-    // Softer semantic colors — muted enough to not feel harsh
-    root.style.setProperty('--color-green', '#34d399');
-    root.style.setProperty('--color-green-light', 'rgba(52, 211, 153, 0.15)');
-    root.style.setProperty('--color-yellow', '#fbbf24');
-    root.style.setProperty('--color-yellow-light', 'rgba(251, 191, 36, 0.15)');
-    root.style.setProperty('--color-red', '#f87171');
-    root.style.setProperty('--color-red-light', 'rgba(248, 113, 113, 0.15)');
+    // High contrast adjustments for dark vs light modes
+    if (isDarkMode) {
+      root.style.setProperty('--color-primary-dark', adjustBrightness(primary, 30));
+      root.style.setProperty('--color-primary-light', `${primary}28`);
+      // Softer semantic colors — muted enough to not feel harsh
+      root.style.setProperty('--color-green', '#34d399');
+      root.style.setProperty('--color-green-light', 'rgba(52, 211, 153, 0.15)');
+      root.style.setProperty('--color-yellow', '#fbbf24');
+      root.style.setProperty('--color-yellow-light', 'rgba(251, 191, 36, 0.15)');
+      root.style.setProperty('--color-red', '#f87171');
+      root.style.setProperty('--color-red-light', 'rgba(248, 113, 113, 0.15)');
+    } else {
+      root.style.setProperty('--color-primary-dark', adjustBrightness(primary, -22));
+      root.style.setProperty('--color-primary-light', `${primary}18`);
+      root.style.setProperty('--color-green', '#10b981');
+      root.style.setProperty('--color-green-light', '#d1fae5');
+      root.style.setProperty('--color-yellow', '#f59e0b');
+      root.style.setProperty('--color-yellow-light', '#fef3c7');
+      root.style.setProperty('--color-red', '#ef4444');
+      root.style.setProperty('--color-red-light', '#fee2e2');
+    }
+
+    // Full-page environment mode variables
+    root.style.setProperty('--color-background', modeConfig.background);
+    root.style.setProperty('--color-surface', modeConfig.surface);
+    root.style.setProperty('--color-surface-hover', modeConfig.surfaceHover);
+    root.style.setProperty('--color-text-main', modeConfig.textMain);
+    root.style.setProperty('--color-text-muted', modeConfig.textMuted);
+    root.style.setProperty('--color-border', modeConfig.border);
+    // Use the premium card gradient from the mode config
+    root.style.setProperty('--gradient-card', modeConfig.cardGradient || `linear-gradient(135deg, ${modeConfig.surface} 0%, ${modeConfig.background} 100%)`);
+
+    // Environment shadows — much richer on dark to give depth
+    const shadowBase = modeConfig.shadowBase;
+    const shadowAlpha = parseFloat(modeConfig.shadowAlpha);
+    if (isDarkMode) {
+      root.style.setProperty('--shadow-sm', `0 2px 12px rgba(${shadowBase},${shadowAlpha * 0.6})`);
+      root.style.setProperty('--shadow-md', `0 8px 32px rgba(${shadowBase},${shadowAlpha})`);
+      root.style.setProperty('--shadow-lg', `0 20px 60px rgba(${shadowBase},${shadowAlpha * 1.3})`);
+    } else {
+      root.style.setProperty('--shadow-sm', `0 2px 8px rgba(${shadowBase},${shadowAlpha * 0.7})`);
+      root.style.setProperty('--shadow-md', `0 6px 24px rgba(${shadowBase},${shadowAlpha})`);
+      root.style.setProperty('--shadow-lg', `0 16px 48px rgba(${shadowBase},${shadowAlpha * 1.4})`);
+    }
+  };
+
+  if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+    window.requestAnimationFrame(updateThemeDOM);
   } else {
-    root.style.setProperty('--color-primary-dark', adjustBrightness(primary, -22));
-    root.style.setProperty('--color-primary-light', `${primary}18`);
-    root.style.setProperty('--color-green', '#10b981');
-    root.style.setProperty('--color-green-light', '#d1fae5');
-    root.style.setProperty('--color-yellow', '#f59e0b');
-    root.style.setProperty('--color-yellow-light', '#fef3c7');
-    root.style.setProperty('--color-red', '#ef4444');
-    root.style.setProperty('--color-red-light', '#fee2e2');
-  }
-
-  // Full-page environment mode variables
-  root.style.setProperty('--color-background', modeConfig.background);
-  root.style.setProperty('--color-surface', modeConfig.surface);
-  root.style.setProperty('--color-surface-hover', modeConfig.surfaceHover);
-  root.style.setProperty('--color-text-main', modeConfig.textMain);
-  root.style.setProperty('--color-text-muted', modeConfig.textMuted);
-  root.style.setProperty('--color-border', modeConfig.border);
-  // Use the premium card gradient from the mode config
-  root.style.setProperty('--gradient-card', modeConfig.cardGradient || `linear-gradient(135deg, ${modeConfig.surface} 0%, ${modeConfig.background} 100%)`);
-
-  // Environment shadows — much richer on dark to give depth
-  const shadowBase = modeConfig.shadowBase;
-  const shadowAlpha = parseFloat(modeConfig.shadowAlpha);
-  if (isDarkMode) {
-    root.style.setProperty('--shadow-sm', `0 2px 12px rgba(${shadowBase},${shadowAlpha * 0.6})`);
-    root.style.setProperty('--shadow-md', `0 8px 32px rgba(${shadowBase},${shadowAlpha})`);
-    root.style.setProperty('--shadow-lg', `0 20px 60px rgba(${shadowBase},${shadowAlpha * 1.3})`);
-  } else {
-    root.style.setProperty('--shadow-sm', `0 2px 8px rgba(${shadowBase},${shadowAlpha * 0.7})`);
-    root.style.setProperty('--shadow-md', `0 6px 24px rgba(${shadowBase},${shadowAlpha})`);
-    root.style.setProperty('--shadow-lg', `0 16px 48px rgba(${shadowBase},${shadowAlpha * 1.4})`);
+    updateThemeDOM();
   }
 };
 

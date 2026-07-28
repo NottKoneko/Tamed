@@ -82,10 +82,16 @@
 /* ========================================== */
 /* GLOBAL RESET & BASE STYLES                 */
 /* ========================================== */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 svg {
@@ -100,6 +106,7 @@ html, body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
@@ -240,7 +247,9 @@ button {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  animation: slideUp 0.35s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 /* Custom Badge Pill */
@@ -255,19 +264,19 @@ button {
   letter-spacing: 0.02em;
 }
 
-/* Animations */
+/* GPU Accelerated Smooth Animations */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes popIn {
-  0% { transform: scale(0.92); opacity: 0; }
-  60% { transform: scale(1.03); }
-  100% { transform: scale(1); opacity: 1; }
+  0% { transform: scale3d(0.92, 0.92, 1); opacity: 0; }
+  60% { transform: scale3d(1.03, 1.03, 1); }
+  100% { transform: scale3d(1, 1, 1); opacity: 1; }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -4px, 0); }
 }
