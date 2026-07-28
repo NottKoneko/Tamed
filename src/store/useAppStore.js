@@ -394,9 +394,9 @@ export const useAppStore = create((set, get) => ({
     const completed = dailyTasks.filter(t => t.is_completed).length;
 
     let targetStatus = 'red';
-    if (completed === total) {
+    if (completed === total && total > 0) {
       targetStatus = 'green';
-    } else if (completed > 0) {
+    } else if (total > 0 && (completed / total) >= (1 / 3)) {
       targetStatus = 'yellow';
     }
 
@@ -426,6 +426,7 @@ export const useAppStore = create((set, get) => ({
       } else {
         await mockBackend.toggleDailyTask(taskId, newStatus);
       }
+      await get().evaluateAutoCalendarStatus();
       await get().loadPairingData();
       if (newStatus) {
         playSound('taskComplete');
@@ -433,7 +434,6 @@ export const useAppStore = create((set, get) => ({
       } else {
         showToast(`Task undone. -${xpReward} XP removed ↩️`, 'info');
       }
-      await get().evaluateAutoCalendarStatus();
     } catch (err) {
       showToast(err.message, 'warning');
     }
@@ -457,10 +457,10 @@ export const useAppStore = create((set, get) => ({
       } else {
         await mockBackend.overrideDailyTask(taskId, isCompleted);
       }
+      await get().evaluateAutoCalendarStatus();
       await get().loadPairingData();
       playSound('praise');
       showToast(isCompleted ? 'Owner override: Task marked complete! 🟢' : 'Owner override: Task marked incomplete ↩️', 'info');
-      await get().evaluateAutoCalendarStatus();
     } catch (err) {
       showToast(err.message, 'warning');
     }
@@ -474,9 +474,9 @@ export const useAppStore = create((set, get) => ({
       } else {
         await mockBackend.deleteDailyTask(taskId);
       }
+      await get().evaluateAutoCalendarStatus();
       await get().loadPairingData();
       showToast('Daily task removed', 'info');
-      await get().evaluateAutoCalendarStatus();
     } catch (err) {
       showToast(err.message, 'warning');
     }
