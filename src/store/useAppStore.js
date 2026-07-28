@@ -8,6 +8,29 @@ import { checkRateLimit } from '../utils/rateLimiter';
 import { sanitizeText, clampInput } from '../utils/sanitizer';
 import { getLocalDateString } from '../utils/dateUtils';
 
+const getSecureRandomInt = (maxExclusive) => {
+  if (!Number.isInteger(maxExclusive) || maxExclusive <= 0) {
+    throw new Error('maxExclusive must be a positive integer');
+  }
+
+  const cryptoObj = globalThis.crypto;
+  if (!cryptoObj || typeof cryptoObj.getRandomValues !== 'function') {
+    throw new Error('Secure random generator is unavailable');
+  }
+
+  const uint32Max = 0x100000000;
+  const limit = uint32Max - (uint32Max % maxExclusive);
+  const randomBuffer = new Uint32Array(1);
+  let value;
+
+  do {
+    cryptoObj.getRandomValues(randomBuffer);
+    value = randomBuffer[0];
+  } while (value >= limit);
+
+  return value % maxExclusive;
+};
+
 const sendNativeNotification = (title, body) => {
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     try {
@@ -89,8 +112,8 @@ export const useAppStore = create((set, get) => ({
     const activeUserId = session?.user?.id;
     
     if (isSupabaseConfigured && session && activeUserId) {
-      const uid = `${profileDetails.username}#${Math.floor(1000 + Math.random() * 9000)}`;
-      const pair_code = Math.floor(100000 + Math.random() * 900000).toString();
+      const uid = `${profileDetails.username}#${1000 + getSecureRandomInt(9000)}`;
+      const pair_code = (100000 + getSecureRandomInt(900000)).toString();
       
       const payload = {
         id: activeUserId,
