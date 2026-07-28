@@ -434,7 +434,24 @@ export const Home = () => {
 
       {/* OWNER: Praise Transmitter Card */}
       {isOwner && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '4px solid var(--color-accent)' }}>
+        <div className="card" style={{ 
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1rem', 
+          border: '1.5px solid var(--color-primary-light)',
+          paddingLeft: '1.35rem'
+        }}>
+          {/* Vibrant Left Accent Strip */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '5px',
+            backgroundColor: 'var(--color-accent)'
+          }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Heart size={20} color="var(--color-accent)" /> Send Praise or Head Pat
@@ -635,7 +652,24 @@ export const Home = () => {
 
       {/* OWNER: Points Management Control Panel */}
       {isOwner && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '4px solid var(--color-primary)' }}>
+        <div className="card" style={{ 
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1rem', 
+          border: '1.5px solid var(--color-primary-light)',
+          paddingLeft: '1.35rem'
+        }}>
+          {/* Vibrant Left Accent Strip */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '5px',
+            backgroundColor: 'var(--color-primary)'
+          }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Shield size={20} color="var(--color-primary)" /> Points Adjuster

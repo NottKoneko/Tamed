@@ -9,7 +9,8 @@ let db = {
   reward_items: [],     // Active Reward Store Catalog
   redemptions: [],      // Redeemed rewards queue & history
   daily_tasks: [],      // Behavior Codex daily tasks
-  praise_notes: []      // Owner praise cards & head pats
+  praise_notes: [],     // Owner praise cards & head pats
+  reminders: []         // Scheduled reminders & instant nudges
 };
 
 // Seed initial data
@@ -110,6 +111,22 @@ const seedData = () => {
       assigned_points: 0, 
       status: 'pending', 
       created_at: new Date().toISOString() 
+    }
+  );
+
+  // Seed sample scheduled reminder
+  db.reminders.push(
+    {
+      id: uuidv4(),
+      pairing_id: pairingId,
+      created_by: ownerId,
+      title: 'Bedtime Check-in 🛌',
+      message: 'Time to wind down and get ready for bedtime!',
+      reminder_time: '22:30',
+      repeat_option: 'daily',
+      is_instant: false,
+      is_active: true,
+      created_at: new Date().toISOString()
     }
   );
 };
@@ -475,6 +492,38 @@ class MockBackend {
     db.praise_notes.push(note);
     this.notify('PRAISE_NOTE_CREATED', note);
     return note;
+  }
+
+  // --- Reminders & Instant Nudges ---
+  async getReminders(pairingId) {
+    await delay();
+    return db.reminders.filter(r => r.pairing_id === pairingId).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  async createReminder(pairingId, createdBy, { title, message, reminderTime = '21:00', repeatOption = 'daily', isInstant = false }) {
+    await delay();
+    const reminder = {
+      id: uuidv4(),
+      pairing_id: pairingId,
+      created_by: createdBy,
+      title,
+      message: message || '',
+      reminder_time: reminderTime,
+      repeat_option: repeatOption,
+      is_instant: isInstant,
+      is_active: true,
+      created_at: new Date().toISOString()
+    };
+    db.reminders.push(reminder);
+    this.notify('REMINDER_CREATED', reminder);
+    return reminder;
+  }
+
+  async deleteReminder(reminderId) {
+    await delay();
+    db.reminders = db.reminders.filter(r => r.id !== reminderId);
+    this.notify('REMINDER_DELETED', { reminderId });
+    return true;
   }
 
   // --- 1. REWARD PROPOSALS ---

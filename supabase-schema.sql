@@ -136,6 +136,21 @@ CREATE TABLE public.praise_notes (
 );
 ALTER TABLE public.praise_notes ENABLE ROW LEVEL SECURITY;
 
+-- 10. SCHEDULED REMINDERS & INSTANT NUDGES
+CREATE TABLE public.reminders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pairing_id UUID REFERENCES public.pairings(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL CHECK (char_length(title) <= 200),
+  message TEXT CHECK (message IS NULL OR char_length(message) <= 500),
+  reminder_time TEXT DEFAULT '21:00',
+  repeat_option TEXT DEFAULT 'daily',
+  is_instant BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
+
 -- ==========================================
 -- ROW LEVEL SECURITY POLICIES
 -- ==========================================
@@ -189,6 +204,11 @@ CREATE POLICY "Pets can update daily task completion" ON public.daily_tasks FOR 
 CREATE POLICY "Users can view praise notes for their pairings" ON public.praise_notes FOR SELECT USING (is_user_in_pairing(pairing_id));
 CREATE POLICY "Owners can insert praise notes" ON public.praise_notes FOR INSERT WITH CHECK (auth.uid() = sender_id AND auth.uid() IN (SELECT owner_id FROM pairings WHERE id = pairing_id));
 
+-- Reminders
+CREATE POLICY "Users can view reminders for their pairings" ON public.reminders FOR SELECT USING (is_user_in_pairing(pairing_id));
+CREATE POLICY "Owners can insert reminders" ON public.reminders FOR INSERT WITH CHECK (auth.uid() = created_by AND auth.uid() IN (SELECT owner_id FROM pairings WHERE id = pairing_id));
+CREATE POLICY "Owners can update or delete reminders" ON public.reminders FOR ALL USING (auth.uid() IN (SELECT owner_id FROM pairings WHERE id = pairing_id));
+
 -- ==========================================
 -- REALTIME
 -- ==========================================
@@ -200,6 +220,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE redemptions;
 ALTER PUBLICATION supabase_realtime ADD TABLE daily_tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE praise_notes;
 ALTER PUBLICATION supabase_realtime ADD TABLE pairings;
+ALTER PUBLICATION supabase_realtime ADD TABLE reminders;
 
 
 

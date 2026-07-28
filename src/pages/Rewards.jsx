@@ -169,7 +169,24 @@ export const Rewards = () => {
 
       {/* PET: Propose New Store Reward */}
       {!isOwner && isProposing && (
-        <form onSubmit={handlePetSubmitProposal} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '4px solid var(--color-primary)' }}>
+        <form onSubmit={handlePetSubmitProposal} className="card" style={{ 
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1rem', 
+          border: '1.5px solid var(--color-primary-light)',
+          paddingLeft: '1.35rem'
+        }}>
+          {/* Vibrant Left Accent Strip */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '5px',
+            backgroundColor: 'var(--color-primary)'
+          }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Gift size={20} color="var(--color-primary)" />
             <h2 style={{ fontSize: '1.1rem' }}>Propose Reward Idea for Store</h2>
@@ -277,7 +294,24 @@ export const Rewards = () => {
             </p>
           ) : (
             pendingRedemptions.map((red) => (
-              <div key={red.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderLeft: '4px solid var(--color-accent)' }}>
+              <div key={red.id} className="card" style={{ 
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0.75rem', 
+                border: '1.5px solid var(--color-primary-light)',
+                paddingLeft: '1.35rem'
+              }}>
+                {/* Vibrant Left Accent Strip */}
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '5px',
+                  backgroundColor: 'var(--color-accent)'
+                }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <h3 style={{ fontSize: '1.05rem', marginBottom: '0.25rem' }}>{red.title}</h3>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Calendar } from '../components/Calendar';
+import { RemindersSection } from '../components/RemindersSection';
 import { Sparkles, Trophy, Gift } from 'lucide-react';
 
 export const DashboardPet = () => {
@@ -87,6 +88,9 @@ export const DashboardPet = () => {
       >
         <Gift size={20} /> Request a Reward in Rewards Hub
       </button>
+
+      {/* Active Reminders & Nudges */}
+      <RemindersSection isOwner={false} />
 
       {/* Interactive Calendar */}
       <Calendar isOwner={false} />

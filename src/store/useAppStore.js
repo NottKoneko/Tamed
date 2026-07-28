@@ -19,6 +19,7 @@ export const useAppStore = create((set, get) => ({
   redemptions: [],   
   dailyTasks: [],
   praiseNotes: [],
+  reminders: [],
   activePraiseModal: null,
   soundEnabled: true,
   activeTab: 'home', 
@@ -146,33 +147,36 @@ export const useAppStore = create((set, get) => ({
         let redemptions = [];
         let dailyTasks = [];
         let praiseNotes = [];
+        let reminders = [];
 
         if (isSupabaseConfigured && session) {
-          [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes] = await Promise.all([
+          [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders] = await Promise.all([
             supabaseBackend.getProfile(partnerId),
             supabaseBackend.getCalendarEntries(pairingData.id),
             supabaseBackend.getProposals(pairingData.id),
             supabaseBackend.getRewardItems(pairingData.id),
             supabaseBackend.getRedemptions(pairingData.id),
             supabaseBackend.getDailyTasks(pairingData.id),
-            supabaseBackend.getPraiseNotes(pairingData.id)
+            supabaseBackend.getPraiseNotes(pairingData.id),
+            supabaseBackend.getReminders(pairingData.id)
           ]);
         } else {
-          [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes] = await Promise.all([
+          [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders] = await Promise.all([
             mockBackend.getProfile(partnerId),
             mockBackend.getCalendarEntries(pairingData.id),
             mockBackend.getProposals(pairingData.id),
             mockBackend.getRewardItems(pairingData.id),
             mockBackend.getRedemptions(pairingData.id),
             mockBackend.getDailyTasks(pairingData.id),
-            mockBackend.getPraiseNotes(pairingData.id)
+            mockBackend.getPraiseNotes(pairingData.id),
+            mockBackend.getReminders(pairingData.id)
           ]);
         }
 
         const species = currentProfile.role === 'pet' ? currentProfile.pet_species : (partnerProfile?.pet_species || 'puppy');
         document.documentElement.setAttribute('data-theme', species || 'puppy');
 
-        set({ partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes });
+        set({ partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders });
         get().setupRealtime(pairingData.id);
       }
     } catch (err) {
@@ -361,6 +365,84 @@ export const useAppStore = create((set, get) => ({
       playSound('praise');
       triggerConfetti();
       showToast('Praise sent to your Pet! 💖', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  // Reminders & Instant Nudges
+  sendInstantNudge: async (title, message = '') => {
+    const { pairing, user, session, showToast } = get();
+    if (!pairing || !user) return;
+
+    // Sliding window rate limit check: max 3 instant nudges per 60 seconds
+    const rateCheck = checkRateLimit(`instant_nudge:${user.id}`, 3, 60000);
+    if (!rateCheck.allowed) {
+      showToast(`Rate limit reached! Please wait ${rateCheck.retryAfterSeconds}s before sending another instant nudge. ⏳`, 'warning');
+      return;
+    }
+
+    try {
+      const payload = {
+        title: title || 'Instant Nudge! 🔔',
+        message: message || 'Your owner is sending a gentle check-in nudge!',
+        reminderTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        repeatOption: 'once',
+        isInstant: true
+      };
+
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.createReminder(pairing.id, user.id, payload);
+      } else {
+        await mockBackend.createReminder(pairing.id, user.id, payload);
+      }
+
+      await get().loadPairingData();
+      playSound('praise');
+      triggerConfetti();
+      showToast('Instant nudge sent to your Pet! 🔔', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  createScheduledReminder: async (title, reminderTime, repeatOption = 'daily', message = '') => {
+    const { pairing, user, session, showToast } = get();
+    if (!pairing || !user) return;
+
+    try {
+      const payload = {
+        title,
+        message,
+        reminderTime,
+        repeatOption,
+        isInstant: false
+      };
+
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.createReminder(pairing.id, user.id, payload);
+      } else {
+        await mockBackend.createReminder(pairing.id, user.id, payload);
+      }
+
+      await get().loadPairingData();
+      playSound('click');
+      showToast(`Scheduled reminder "${title}" for ${reminderTime} ⏰`, 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  deleteReminder: async (reminderId) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.deleteReminder(reminderId);
+      } else {
+        await mockBackend.deleteReminder(reminderId);
+      }
+      await get().loadPairingData();
+      showToast('Reminder removed', 'info');
     } catch (err) {
       showToast(err.message, 'warning');
     }

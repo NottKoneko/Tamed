@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Calendar } from '../components/Calendar';
+import { RemindersSection } from '../components/RemindersSection';
 import { Shield, Copy, UserCheck, Heart } from 'lucide-react';
 
 export const DashboardOwner = () => {
@@ -51,12 +52,24 @@ export const DashboardOwner = () => {
     <div className="page-container">
       {/* Header */}
       <div className="card" style={{
+        position: 'relative',
+        overflow: 'hidden',
         backgroundColor: 'var(--color-surface)',
-        borderLeft: '4px solid var(--color-primary)'
+        border: '1.5px solid var(--color-primary-light)',
+        paddingLeft: '1.35rem'
       }}>
+        {/* Vibrant Left Accent Strip */}
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '5px',
+          backgroundColor: 'var(--color-primary)'
+        }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1 style={{ fontSize: '1.25rem' }}>Owner Dashboard</h1>
+            <h1 style={{ fontSize: '1.25rem' }}>Owner Dashboard & Schedule</h1>
             <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
               Logged in as <b>{user?.username}</b> ({user?.uid})
             </p>
@@ -85,6 +98,9 @@ export const DashboardOwner = () => {
           </div>
         )}
       </div>
+
+      {/* Reminders & Instant Nudges */}
+      <RemindersSection isOwner={true} />
 
       {/* Calendar (Owner edit mode) */}
       <Calendar isOwner={true} />

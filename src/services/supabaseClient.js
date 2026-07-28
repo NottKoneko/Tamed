@@ -290,6 +290,38 @@ export const supabaseBackend = {
     return data;
   },
 
+  // Reminders
+  getReminders: async (pairingId) => {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('reminders').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  createReminder: async (pairingId, createdBy, reminderPayload) => {
+    if (!supabase) return null;
+    const reminderData = {
+      pairing_id: pairingId,
+      created_by: createdBy,
+      title: reminderPayload.title,
+      message: reminderPayload.message || '',
+      reminder_time: reminderPayload.reminderTime || '21:00',
+      repeat_option: reminderPayload.repeatOption || 'daily',
+      is_instant: Boolean(reminderPayload.isInstant),
+      is_active: true
+    };
+    const { data, error } = await supabase.from('reminders').insert([reminderData]).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  deleteReminder: async (reminderId) => {
+    if (!supabase) return true;
+    const { error } = await supabase.from('reminders').delete().eq('id', reminderId);
+    if (error) throw error;
+    return true;
+  },
+
   // Core Mechanics
   setPetPoints: async (petId, points) => {
     if (!supabase) return null;
