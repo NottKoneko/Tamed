@@ -81,28 +81,59 @@ export const supabaseBackend = {
     });
     if (!rpcErr) return rpcData;
 
-    // Direct table fallback if RPC not installed yet
+    // Direct table fallback with points balance calculation
+    const { data: pairing } = await supabase.from('pairings').select('*').eq('id', pairingId).maybeSingle();
+    if (!pairing) throw new Error('Pairing not found');
+
+    const { data: existing } = await supabase
+      .from('calendar_entries')
+      .select('*')
+      .eq('pairing_id', pairingId)
+      .eq('entry_date', date)
+      .maybeSingle();
+
+    const oldPoints = existing ? (existing.points_awarded || 0) : 0;
+
+    let newPoints = 0;
+    if (status === 'green') {
+      const dateObj = new Date(date + 'T00:00:00');
+      const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+      const multiplier = isWeekend && pairing.weekend_multiplier ? parseFloat(pairing.weekend_multiplier) : 1.0;
+      newPoints = Math.round((pairing.point_value_green ?? 1) * multiplier);
+    } else if (status === 'yellow') {
+      newPoints = pairing.point_value_yellow ?? 0;
+    } else if (status === 'red') {
+      newPoints = pairing.point_value_red ?? 0;
+    }
+
+    const pointsDelta = newPoints - oldPoints;
+
     if (status === 'none') {
-      const { error } = await supabase
+      await supabase
         .from('calendar_entries')
         .delete()
         .eq('pairing_id', pairingId)
         .eq('entry_date', date);
-      if (error) throw error;
-      return true;
     } else {
-      const { data, error } = await supabase
+      await supabase
         .from('calendar_entries')
         .upsert({
           pairing_id: pairingId,
           entry_date: date,
           status: status,
-          points_awarded: status === 'green' ? 1 : 0
-        }, { onConflict: 'pairing_id,entry_date' })
-        .select();
-      if (error) throw error;
-      return data;
+          points_awarded: newPoints
+        }, { onConflict: 'pairing_id,entry_date' });
     }
+
+    if (pointsDelta !== 0 && pairing.pet_id) {
+      const { data: petProfile } = await supabase.from('profiles').select('points_balance').eq('id', pairing.pet_id).maybeSingle();
+      if (petProfile) {
+        const updatedBalance = Math.max(0, (petProfile.points_balance || 0) + pointsDelta);
+        await supabase.from('profiles').update({ points_balance: updatedBalance }).eq('id', pairing.pet_id);
+      }
+    }
+
+    return true;
   },
 
   // Daily Tasks

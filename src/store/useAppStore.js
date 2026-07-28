@@ -577,7 +577,7 @@ export const useAppStore = create((set, get) => ({
 
   // Calendar Management
   setCalendarStatus: async (dateStr, status) => {
-    const { pairing, session, showToast } = get();
+    const { pairing, partnerProfile, user, session, showToast } = get();
     if (!pairing) return;
 
     // Optimistically update calendar entries state
@@ -585,11 +585,28 @@ export const useAppStore = create((set, get) => ({
     const existingIdx = currentEntries.findIndex(e => e.entry_date === dateStr);
     let updatedEntries = [...currentEntries];
 
+    const oldEntry = existingIdx !== -1 ? currentEntries[existingIdx] : null;
+    const oldPoints = oldEntry ? (oldEntry.points_awarded || 0) : 0;
+
+    let newPoints = 0;
+    if (status === 'green') {
+      const dateObj = new Date(dateStr + 'T00:00:00');
+      const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+      const multiplier = isWeekend && pairing.weekend_multiplier ? parseFloat(pairing.weekend_multiplier) : 1.0;
+      newPoints = Math.round((pairing.point_value_green ?? 1) * multiplier);
+    } else if (status === 'yellow') {
+      newPoints = pairing.point_value_yellow ?? 0;
+    } else if (status === 'red') {
+      newPoints = pairing.point_value_red ?? 0;
+    }
+
+    const pointsDelta = newPoints - oldPoints;
+
     if (existingIdx !== -1) {
       if (status === 'none') {
         updatedEntries.splice(existingIdx, 1);
       } else {
-        updatedEntries[existingIdx] = { ...updatedEntries[existingIdx], status };
+        updatedEntries[existingIdx] = { ...updatedEntries[existingIdx], status, points_awarded: newPoints };
       }
     } else if (status !== 'none') {
       updatedEntries.push({
@@ -597,8 +614,21 @@ export const useAppStore = create((set, get) => ({
         pairing_id: pairing.id,
         entry_date: dateStr,
         status,
-        points_awarded: 1
+        points_awarded: newPoints
       });
+    }
+
+    // Optimistically update pet points balance in store
+    const petId = pairing.pet_id;
+    if (pointsDelta !== 0 && petId) {
+      if (user && user.id === petId) {
+        const newBal = Math.max(0, (user.points_balance || 0) + pointsDelta);
+        set({ user: { ...user, points_balance: newBal }, profile: { ...user, points_balance: newBal } });
+      }
+      if (partnerProfile && partnerProfile.id === petId) {
+        const newBal = Math.max(0, (partnerProfile.points_balance || 0) + pointsDelta);
+        set({ partnerProfile: { ...partnerProfile, points_balance: newBal } });
+      }
     }
 
     set({ calendarEntries: updatedEntries });
