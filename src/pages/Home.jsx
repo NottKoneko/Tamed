@@ -353,6 +353,11 @@ export const Home = () => {
         </div>
       )}
 
+      {/* XP Progress Bar */}
+      {user?.show_xp_bar !== false && (
+        <XPProgressBar xp={xp} level={level} customTitles={pairing?.custom_level_titles} />
+      )}
+
       {/* Gamification Stats Summary Grid (Species Currency Wrapper) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1.125rem' }}>

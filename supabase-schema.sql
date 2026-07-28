@@ -56,6 +56,7 @@ CREATE TABLE public.pairings (
   custom_currency_name TEXT CHECK (custom_currency_name IS NULL OR char_length(custom_currency_name) <= 50),
   custom_currency_singular TEXT CHECK (custom_currency_singular IS NULL OR char_length(custom_currency_singular) <= 50),
   custom_currency_icon TEXT,     -- e.g. '🫐', '🍪'
+  custom_level_titles TEXT,      -- Custom rank titles stored as JSON map (e.g. '{"1":"Novice Pet","2":"Good Pet"}')
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(owner_id, pet_id)
@@ -527,3 +528,6 @@ BEGIN
   );
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- MIGRATION UTILITY (Run if upgrading existing database):
+-- ALTER TABLE public.pairings ADD COLUMN IF NOT EXISTS custom_level_titles TEXT;

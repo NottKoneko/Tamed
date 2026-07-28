@@ -408,20 +408,30 @@ export const useAppStore = create((set, get) => ({
   },
 
   toggleDailyTask: async (taskId) => {
-    const { dailyTasks, session, showToast } = get();
+    const { dailyTasks, session, showToast, pairing } = get();
     const task = (dailyTasks || []).find(t => t.id === taskId);
     if (!task) return;
     const newStatus = !task.is_completed;
+    const xpReward = task.xp_reward || 25;
     try {
       if (isSupabaseConfigured && session) {
         await supabaseBackend.toggleDailyTask(taskId, newStatus);
+        if (pairing?.pet_id) {
+          if (newStatus) {
+            await supabaseBackend.addXP(pairing.pet_id, xpReward);
+          } else {
+            await supabaseBackend.removeXP(pairing.pet_id, xpReward);
+          }
+        }
       } else {
-        await mockBackend.toggleDailyTask(taskId);
+        await mockBackend.toggleDailyTask(taskId, newStatus);
       }
       await get().loadPairingData();
       if (newStatus) {
         playSound('taskComplete');
-        showToast('Task completed! +25 XP awarded 🎉', 'success');
+        showToast(`Task completed! +${xpReward} XP awarded 🎉`, 'success');
+      } else {
+        showToast(`Task undone. -${xpReward} XP removed ↩️`, 'info');
       }
       await get().evaluateAutoCalendarStatus();
     } catch (err) {
@@ -430,16 +440,26 @@ export const useAppStore = create((set, get) => ({
   },
 
   overrideDailyTask: async (taskId, isCompleted = true) => {
-    const { session, showToast } = get();
+    const { dailyTasks, session, showToast, pairing } = get();
+    const task = (dailyTasks || []).find(t => t.id === taskId);
+    const wasCompleted = task?.is_completed;
+    const xpReward = task?.xp_reward || 25;
     try {
       if (isSupabaseConfigured && session) {
         await supabaseBackend.overrideDailyTask(taskId, isCompleted);
+        if (pairing?.pet_id) {
+          if (isCompleted && !wasCompleted) {
+            await supabaseBackend.addXP(pairing.pet_id, xpReward);
+          } else if (!isCompleted && wasCompleted) {
+            await supabaseBackend.removeXP(pairing.pet_id, xpReward);
+          }
+        }
       } else {
         await mockBackend.overrideDailyTask(taskId, isCompleted);
       }
       await get().loadPairingData();
       playSound('praise');
-      showToast(isCompleted ? 'Owner override: Task marked complete! 🟢' : 'Owner override: Task marked incomplete', 'info');
+      showToast(isCompleted ? 'Owner override: Task marked complete! 🟢' : 'Owner override: Task marked incomplete ↩️', 'info');
       await get().evaluateAutoCalendarStatus();
     } catch (err) {
       showToast(err.message, 'warning');
@@ -1001,6 +1021,25 @@ export const useAppStore = create((set, get) => ({
       }
       set({ pairing: updated });
       showToast('Pairing proposal limits & weekend multiplier saved! ⚙️', 'success');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updateCustomLevelTitles: async (titlesMap) => {
+    const { pairing, session, showToast } = get();
+    if (!pairing) return;
+    try {
+      let updated;
+      const titlesJson = typeof titlesMap === 'string' ? titlesMap : JSON.stringify(titlesMap);
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateCustomLevelTitles(pairing.id, titlesJson);
+      } else {
+        updated = await mockBackend.updateCustomLevelTitles(pairing.id, titlesJson);
+      }
+      set({ pairing: updated });
+      playSound('praise');
+      showToast('Custom progression rank titles saved! 👑', 'success');
     } catch (err) {
       showToast(err.message, 'warning');
     }

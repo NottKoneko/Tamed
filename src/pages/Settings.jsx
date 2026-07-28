@@ -5,10 +5,11 @@ import { THEME_MODES } from '../utils/theme';
 import { requestNotificationPermission, scheduleLocalDailyCheckIn } from '../utils/notifications';
 import { TIMEZONE_OPTIONS } from './Onboarding';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { DEFAULT_LEVEL_TITLES } from '../utils/xpUtils';
 import { 
   Palette, Heart, LogOut, Unlink, Check, Shield, 
   Volume2, VolumeX, Coins, ChevronDown, ChevronUp, Zap, 
-  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe, Link
+  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe, Link, Trophy
 } from 'lucide-react';
 
 /* ───── Collapsible Section Component ──────────────────────────────── */
@@ -63,7 +64,7 @@ export const Settings = () => {
     user, pairing, partnerProfile, 
     updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency, 
     updateCustomTheme, updatePetNickname, updateReminderTime, updateTimezone, toggleXPBar, 
-    updatePairingRules, pairWithCode, unpair, setUser, soundEnabled, toggleSound, showToast 
+    updatePairingRules, updateCustomLevelTitles, pairWithCode, unpair, setUser, soundEnabled, toggleSound, showToast 
   } = useAppStore();
 
   const isPet = user?.role === 'pet';
@@ -124,6 +125,30 @@ export const Settings = () => {
   );
   const [customEmoji, setCustomEmoji] = useState(pairing?.custom_currency_icon || '🍪');
   const [customName, setCustomName] = useState(pairing?.custom_currency_name || 'Cookies');
+
+  /* Custom Progression Titles */
+  const [levelTitlesInput, setLevelTitlesInput] = useState(() => {
+    let parsed = {};
+    try {
+      parsed = typeof pairing?.custom_level_titles === 'string'
+        ? JSON.parse(pairing.custom_level_titles)
+        : (pairing?.custom_level_titles || {});
+    } catch (e) {
+      parsed = {};
+    }
+    return {
+      1: parsed[1] || DEFAULT_LEVEL_TITLES[1],
+      2: parsed[2] || DEFAULT_LEVEL_TITLES[2],
+      4: parsed[4] || DEFAULT_LEVEL_TITLES[4],
+      7: parsed[7] || DEFAULT_LEVEL_TITLES[7],
+      10: parsed[10] || DEFAULT_LEVEL_TITLES[10]
+    };
+  });
+
+  const handleSaveLevelTitles = (e) => {
+    e.preventDefault();
+    updateCustomLevelTitles(levelTitlesInput);
+  };
 
   /* Theme palettes */
   const PALETTES = [
@@ -662,6 +687,42 @@ export const Settings = () => {
 
             <button type="submit" className="btn-primary">
               <Check size={16} /> Save Rules & Multipliers
+            </button>
+          </form>
+        </Section>
+      )}
+
+      {/* ── OWNER: Progression Ranks & Level Titles ─────────── */}
+      {isOwner && (
+        <Section
+          icon={<Trophy />}
+          title="Progression Rank Titles"
+          subtitle="Customize rank progression titles awarded at higher levels"
+          accentColor="#8b5cf6"
+        >
+          <form onSubmit={handleSaveLevelTitles} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {[
+              { level: 1, label: 'Level 1 Rank' },
+              { level: 2, label: 'Level 2–3 Rank' },
+              { level: 4, label: 'Level 4–6 Rank' },
+              { level: 7, label: 'Level 7–9 Rank' },
+              { level: 10, label: 'Level 10+ Rank' }
+            ].map(({ level, label }) => (
+              <div key={level} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0.75rem', alignItems: 'center' }}>
+                <Label style={{ marginBottom: 0 }}>{label}</Label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={levelTitlesInput[level] || ''}
+                  onChange={(e) => setLevelTitlesInput({ ...levelTitlesInput, [level]: e.target.value })}
+                  placeholder={DEFAULT_LEVEL_TITLES[level]}
+                  style={{ fontSize: '0.85rem', fontWeight: 600 }}
+                />
+              </div>
+            ))}
+
+            <button type="submit" className="btn-primary" style={{ marginTop: '0.25rem' }}>
+              <Check size={16} /> Save Progression Titles
             </button>
           </form>
         </Section>

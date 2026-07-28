@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getLocalDateString } from '../utils/dateUtils';
+import { getSecureRandomInt } from '../utils/cryptoUtils';
+import { calculateLevelFromXP } from '../utils/xpUtils';
 
 // In-memory store
 let db = {
@@ -149,9 +151,9 @@ class MockBackend {
     this.subscribers.forEach(cb => cb({ event, payload }));
   }
 
-  // Helper to calculate Level from total XP
+  // Helper to calculate Level from total XP using progressive curve
   calculateLevel(xp = 0) {
-    return Math.floor(xp / 100) + 1;
+    return calculateLevelFromXP(xp);
   }
 
   // Add XP to profile and trigger level update
@@ -163,6 +165,17 @@ class MockBackend {
       const leveledUp = newLevel > (pet.level || 1);
       pet.level = newLevel;
       this.notify('PROFILE_UPDATED', { ...pet, leveledUp });
+      return pet;
+    }
+  }
+
+  // Remove XP from profile (floored at 0) and update level
+  removeXP(profileId, amount) {
+    const pet = db.profiles.find(p => p.id === profileId);
+    if (pet) {
+      pet.xp = Math.max(0, (pet.xp || 0) - amount);
+      pet.level = this.calculateLevel(pet.xp);
+      this.notify('PROFILE_UPDATED', { ...pet });
       return pet;
     }
   }
@@ -335,14 +348,24 @@ class MockBackend {
     return db.calendar_entries.filter(c => c.pairing_id === pairingId);
   }
 
-  async updatePairingRules(pairingId, { maxPendingProposals = 3, weekendMultiplier = 1.0 }) {
+  async updatePairingRules(pairingId, { maxPendingProposals, weekendMultiplier }) {
     await delay();
     const pairing = db.pairings.find(p => p.id === pairingId);
     if (!pairing) throw new Error("Pairing not found");
 
-    pairing.max_pending_proposals = parseInt(maxPendingProposals, 10) || 3;
-    pairing.weekend_multiplier = parseFloat(weekendMultiplier) || 1.0;
+    if (maxPendingProposals !== undefined) pairing.max_pending_proposals = maxPendingProposals;
+    if (weekendMultiplier !== undefined) pairing.weekend_multiplier = parseFloat(weekendMultiplier);
 
+    this.notify('PAIRING_UPDATED', pairing);
+    return pairing;
+  }
+
+  async updateCustomLevelTitles(pairingId, customLevelTitles) {
+    await delay();
+    const pairing = db.pairings.find(p => p.id === pairingId);
+    if (!pairing) throw new Error("Pairing not found");
+
+    pairing.custom_level_titles = customLevelTitles;
     this.notify('PAIRING_UPDATED', pairing);
     return pairing;
   }
@@ -436,12 +459,17 @@ class MockBackend {
     const task = db.daily_tasks.find(t => t.id === taskId);
     if (!task) throw new Error("Task not found");
 
+    const wasCompleted = task.is_completed;
     task.is_completed = isCompleted !== undefined ? Boolean(isCompleted) : !task.is_completed;
     task.task_date = getLocalDateString();
     const pairing = db.pairings.find(p => p.id === task.pairing_id);
 
-    if (task.is_completed && pairing) {
-      this.addXP(pairing.pet_id, task.xp_reward || 25);
+    if (pairing) {
+      if (task.is_completed && !wasCompleted) {
+        this.addXP(pairing.pet_id, task.xp_reward || 25);
+      } else if (!task.is_completed && wasCompleted) {
+        this.removeXP(pairing.pet_id, task.xp_reward || 25);
+      }
     }
 
     this.notify('DAILY_TASK_UPDATED', task);
@@ -458,8 +486,12 @@ class MockBackend {
     task.task_date = getLocalDateString();
     const pairing = db.pairings.find(p => p.id === task.pairing_id);
 
-    if (isCompleted && !wasCompleted && pairing) {
-      this.addXP(pairing.pet_id, task.xp_reward || 25);
+    if (pairing) {
+      if (task.is_completed && !wasCompleted) {
+        this.addXP(pairing.pet_id, task.xp_reward || 25);
+      } else if (!task.is_completed && wasCompleted) {
+        this.removeXP(pairing.pet_id, task.xp_reward || 25);
+      }
     }
 
     this.notify('DAILY_TASK_UPDATED', task);

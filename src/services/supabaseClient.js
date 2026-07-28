@@ -12,6 +12,7 @@ export const supabase = isSupabaseConfigured
 
 import { getLocalDateString } from '../utils/dateUtils';
 import { getSecureRandomInt } from '../utils/cryptoUtils';
+import { calculateLevelFromXP } from '../utils/xpUtils';
 
 export const supabaseBackend = {
   // Profiles
@@ -416,7 +417,22 @@ export const supabaseBackend = {
 
   addXP: async (petId, amount) => {
     if (!supabase) return null;
-    const { data, error } = await supabase.rpc('add_xp', { p_profile_id: petId, p_amount: amount });
+    const { data: profile } = await supabase.from('profiles').select('xp, level').eq('id', petId).single();
+    if (!profile) return null;
+    const newXP = (profile.xp || 0) + amount;
+    const newLevel = calculateLevelFromXP(newXP);
+    const { data, error } = await supabase.from('profiles').update({ xp: newXP, level: newLevel }).eq('id', petId).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  removeXP: async (petId, amount) => {
+    if (!supabase) return null;
+    const { data: profile } = await supabase.from('profiles').select('xp, level').eq('id', petId).single();
+    if (!profile) return null;
+    const newXP = Math.max(0, (profile.xp || 0) - amount);
+    const newLevel = calculateLevelFromXP(newXP);
+    const { data, error } = await supabase.from('profiles').update({ xp: newXP, level: newLevel }).eq('id', petId).select().single();
     if (error) throw error;
     return data;
   },
@@ -543,6 +559,20 @@ export const supabaseBackend = {
           max_pending_proposals: parseInt(maxPendingProposals, 10) || 3,
           weekend_multiplier: parseFloat(weekendMultiplier) || 1.0
         })
+        .eq('id', pairingId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }, 400);
+  },
+
+  updateCustomLevelTitles: async (pairingId, customLevelTitles) => {
+    if (!supabase) return null;
+    return stackUpdate(`customLevelTitles:${pairingId}`, async () => {
+      const { data, error } = await supabase
+        .from('pairings')
+        .update({ custom_level_titles: customLevelTitles })
         .eq('id', pairingId)
         .select()
         .single();

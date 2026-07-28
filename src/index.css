@@ -88,6 +88,10 @@
   padding: 0;
 }
 
+svg {
+  display: block;
+}
+
 html, body {
   font-family: var(--font-family);
   background-color: var(--color-background);
