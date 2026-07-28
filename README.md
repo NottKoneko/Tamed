@@ -389,13 +389,13 @@ If environment variables `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` are not
 
 ---
 
-### 2. Local Development & GitHub Repository Setup
+### 2. Local Development & Personal GitHub Repository Setup
 
-#### Option A: Clone or Fork an Existing Repository
+#### Step 1: Clone the Official Repository
 ```bash
-# 1. Clone your GitHub repository (replace with your username/repo)
-git clone https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>.git
-cd <YOUR_REPOSITORY_NAME>
+# 1. Clone the official Tamed repository
+git clone https://github.com/NottKoneko/Tamed.git
+cd Tamed
 
 # 2. Install project dependencies
 npm install
@@ -403,27 +403,21 @@ npm install
 # 3. Start local development server
 npm run dev
 ```
+The local development application will be running at `http://localhost:5173`.
 
-#### Option B: Creating & Pushing to Your Own GitHub Repository
-If you are initializing a fresh repository for your deployment:
+#### Step 2: Push to Your Own GitHub Repository for Hosting & Customization
+To host your own deployment on Cloudflare Pages or make custom modifications, create a new repository on GitHub and link your local clone to it:
 
 ```bash
-# 1. Initialize git (if not already initialized)
-git init
+# 1. Create a new empty repository on GitHub (e.g., https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>)
 
-# 2. Add your GitHub remote repository URL
-git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>.git
+# 2. Change the git origin URL to point to your new GitHub repository
+git remote set-url origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPOSITORY_NAME>.git
 
-# 3. Stage and commit all project files
-git add .
-git commit -m "Initial commit of Tamed application"
-
-# 4. Push to your main branch
+# 3. Push all code to your main branch
 git branch -M main
 git push -u origin main
 ```
-
-The local app will be available at `http://localhost:5173`.
 
 ---
 
