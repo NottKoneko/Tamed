@@ -173,8 +173,8 @@ class MockBackend {
     await delay();
     let profile = db.profiles.find(p => p.username === username && p.role === 'owner');
     if (!profile) {
-      const uid = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
-      const pair_code = Math.floor(100000 + Math.random() * 900000).toString();
+      const uid = `${username}#${1000 + getSecureRandomInt(9000)}`;
+      const pair_code = (100000 + getSecureRandomInt(900000)).toString();
       profile = { id: uuidv4(), uid, pair_code, role: 'owner', username, points_balance: 0, xp: 0, level: 1, mood: 'Happy' };
       db.profiles.push(profile);
     }
@@ -185,8 +185,8 @@ class MockBackend {
     await delay();
     let profile = db.profiles.find(p => p.username === username && p.role === 'pet');
     if (!profile) {
-      const uid = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
-      const pair_code = Math.floor(100000 + Math.random() * 900000).toString();
+      const uid = `${username}#${1000 + getSecureRandomInt(9000)}`;
+      const pair_code = (100000 + getSecureRandomInt(900000)).toString();
       profile = { 
         id: uuidv4(), 
         uid, 

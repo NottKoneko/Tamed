@@ -11,6 +11,7 @@ export const supabase = isSupabaseConfigured
   : null;
 
 import { getLocalDateString } from '../utils/dateUtils';
+import { getSecureRandomInt } from '../utils/cryptoUtils';
 
 export const supabaseBackend = {
   // Profiles
@@ -24,8 +25,8 @@ export const supabaseBackend = {
   createProfile: async (profileData) => {
     if (!supabase) return null;
     // Ensure UID & Pair Code are present
-    const uid = profileData.uid || `${profileData.username}#${Math.floor(1000 + Math.random() * 9000)}`;
-    const pair_code = profileData.pair_code || Math.floor(100000 + Math.random() * 900000).toString();
+    const uid = profileData.uid || `${profileData.username}#${1000 + getSecureRandomInt(9000)}`;
+    const pair_code = profileData.pair_code || (100000 + getSecureRandomInt(900000)).toString();
     
     const payload = {
       ...profileData,

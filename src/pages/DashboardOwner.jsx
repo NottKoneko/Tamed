@@ -2,32 +2,12 @@ import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Calendar } from '../components/Calendar';
 import { RemindersSection } from '../components/RemindersSection';
-import { Shield, Copy, UserCheck, Heart } from 'lucide-react';
+import { UserCheck, Heart } from 'lucide-react';
 
 export const DashboardOwner = () => {
-  const { user, pairing, partnerProfile, calendarEntries, showToast, setActiveTab } = useAppStore();
+  const { pairing, partnerProfile, setActiveTab } = useAppStore();
 
   const petPoints = partnerProfile?.points_balance || 0;
-  const greenDaysCount = (calendarEntries || []).filter((e) => e.status === 'green').length;
-
-  const copyPairingCode = () => {
-    if (!user?.uid) return;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(user.uid);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = user.uid;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
-      showToast('Pairing code copied to clipboard!', 'success');
-    } catch (err) {
-      showToast(`Pairing code: ${user.uid}`, 'info');
-    }
-  };
 
   if (!pairing) {
     return (
@@ -50,36 +30,6 @@ export const DashboardOwner = () => {
 
   return (
     <div className="page-container">
-      {/* Header */}
-      <div className="card" style={{
-        position: 'relative',
-        overflow: 'hidden',
-        backgroundColor: 'var(--color-surface)',
-        border: '1.5px solid var(--color-primary-light)',
-        paddingLeft: '1.35rem'
-      }}>
-        {/* Vibrant Left Accent Strip */}
-        <div style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: '5px',
-          backgroundColor: 'var(--color-primary)'
-        }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '1.25rem' }}>Owner Dashboard & Schedule</h1>
-            <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
-              Logged in as <b>{user?.username}</b> ({user?.uid})
-            </p>
-          </div>
-          <button onClick={copyPairingCode} className="btn-secondary" style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}>
-            <Copy size={14} /> Copy Code
-          </button>
-        </div>
-      </div>
-
       {/* Pairing Info */}
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
         <div style={{ padding: '0.625rem', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)' }}>
