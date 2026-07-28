@@ -7,6 +7,20 @@ import { applyCustomTheme } from '../utils/theme';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { sanitizeText, clampInput } from '../utils/sanitizer';
 
+const sendNativeNotification = (title, body) => {
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body: body || 'Tamed Check-in Alert 🐾',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png'
+      });
+    } catch (e) {
+      console.warn('Native Notification call failed:', e);
+    }
+  }
+};
+
 export const useAppStore = create((set, get) => ({
   session: null,
   user: null, 
@@ -177,6 +191,37 @@ export const useAppStore = create((set, get) => ({
         document.documentElement.setAttribute('data-theme', species || 'puppy');
 
         set({ partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders });
+
+        // Auto-popup unread Praise Cards & Instant Nudges received recently
+        if (praiseNotes && praiseNotes.length > 0) {
+          const latestNote = praiseNotes[0];
+          const isReceived = currentProfile && latestNote.sender_id !== currentProfile.id;
+          const isRecent = (Date.now() - new Date(latestNote.created_at).getTime()) < 10 * 60 * 1000;
+          const alreadySeen = localStorage.getItem(`seen_praise_${latestNote.id}`);
+          if (isReceived && isRecent && !alreadySeen && !get().activePraiseModal) {
+            localStorage.setItem(`seen_praise_${latestNote.id}`, 'true');
+            set({ activePraiseModal: latestNote });
+            playSound('praise');
+            triggerConfetti();
+            sendNativeNotification('💖 New Praise Card Received!', latestNote.message || 'You received a praise card from your partner!');
+          }
+        }
+
+        if (reminders && reminders.length > 0) {
+          const latestNudge = reminders.find(r => r.is_instant);
+          if (latestNudge) {
+            const isReceived = currentProfile && latestNudge.created_by !== currentProfile.id;
+            const isRecent = (Date.now() - new Date(latestNudge.created_at).getTime()) < 10 * 60 * 1000;
+            const alreadySeen = localStorage.getItem(`seen_nudge_${latestNudge.id}`);
+            if (isReceived && isRecent && !alreadySeen) {
+              localStorage.setItem(`seen_nudge_${latestNudge.id}`, 'true');
+              playSound('praise');
+              get().showToast(`⚡ Nudge: ${latestNudge.title}${latestNudge.message ? ` - "${latestNudge.message}"` : ''}`, 'info');
+              sendNativeNotification(`⚡ Nudge: ${latestNudge.title}`, latestNudge.message || 'Your partner sent a check-in nudge!');
+            }
+          }
+        }
+
         get().setupRealtime(pairingData.id);
       }
     } catch (err) {
@@ -197,6 +242,31 @@ export const useAppStore = create((set, get) => ({
       if (get().realtimeChannel) return;
 
       const channel = supabase.channel(`tamed-${pairingId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'praise_notes' }, (payload) => {
+          const { user, showToast } = get();
+          const note = payload.new;
+          if (user && note && note.sender_id !== user.id) {
+            localStorage.setItem(`seen_praise_${note.id}`, 'true');
+            set({ activePraiseModal: note });
+            playSound('praise');
+            triggerConfetti();
+            showToast('New Praise Card received! 💖', 'success');
+            sendNativeNotification('💖 New Praise Card Received!', note.message || 'You received a praise card from your partner!');
+          }
+          get().loadPairingData();
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reminders' }, (payload) => {
+          const { user, showToast } = get();
+          const rem = payload.new;
+          if (user && rem && rem.created_by !== user.id) {
+            localStorage.setItem(`seen_nudge_${rem.id}`, 'true');
+            playSound('praise');
+            triggerConfetti();
+            showToast(`⚡ Nudge: ${rem.title}${rem.message ? ` - "${rem.message}"` : ''}`, 'info');
+            sendNativeNotification(`⚡ Nudge: ${rem.title}`, rem.message || 'Your partner sent a check-in nudge!');
+          }
+          get().loadPairingData();
+        })
         .on('postgres_changes', { event: '*', schema: 'public' }, () => {
           get().loadPairingData();
         })
@@ -207,6 +277,23 @@ export const useAppStore = create((set, get) => ({
       mockBackend.subscribe(({ event, payload }) => {
         const { user, pairing, showToast } = get();
         if (!user) return;
+
+        if (event === 'PRAISE_NOTE_CREATED' && payload.sender_id !== user.id) {
+          localStorage.setItem(`seen_praise_${payload.id}`, 'true');
+          set({ activePraiseModal: payload });
+          playSound('praise');
+          triggerConfetti();
+          showToast('New Praise Card received! 💖', 'success');
+          sendNativeNotification('💖 New Praise Card Received!', payload.message || 'You received a praise card!');
+        }
+
+        if (event === 'REMINDER_CREATED' && payload.created_by !== user.id) {
+          localStorage.setItem(`seen_nudge_${payload.id}`, 'true');
+          playSound('praise');
+          triggerConfetti();
+          showToast(`⚡ Nudge: ${payload.title}${payload.message ? ` - "${payload.message}"` : ''}`, 'info');
+          sendNativeNotification(`⚡ Nudge: ${payload.title}`, payload.message || 'Your partner sent a check-in nudge!');
+        }
 
         if (event === 'PROFILE_UPDATED' && payload.id === user.id) {
           if (payload.leveledUp) {
