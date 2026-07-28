@@ -164,6 +164,14 @@ export default function AuthScreen() {
         message = 'Incorrect email or password. Please double check and try again.';
       } else if (message.includes('over_email_send_rate_limit') || message.includes('rate limit') || err?.status === 429) {
         message = '⏳ Email rate limit reached: Please wait 60 seconds before trying again, or switch to Log In above!';
+      } else if (
+        message.toLowerCase().includes('leaked') || 
+        message.toLowerCase().includes('pwned') || 
+        message.toLowerCase().includes('breach') || 
+        message.toLowerCase().includes('compromised') ||
+        err?.code === 'weak_password'
+      ) {
+        message = '🔒 Security Notice: This password has appeared in a known data breach. Please choose a unique, stronger password to protect your account!';
       } else if (message.includes('Failed to fetch')) {
         message = '🌐 Network error: Unable to reach authentication server. Please check your connection or ad-blocker.';
       }

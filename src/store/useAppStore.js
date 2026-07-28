@@ -367,6 +367,28 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  // Profile Details & PFP Avatar Update
+  updateUserProfile: async (updates) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      let updated;
+      if (isSupabaseConfigured && session) {
+        updated = await supabaseBackend.updateProfile(user.id, updates);
+      } else {
+        updated = await mockBackend.updateProfile(user.id, updates);
+      }
+      set({ user: updated, profile: updated });
+      await get().loadPairingData();
+      playSound('click');
+      showToast('Profile updated successfully! ✨', 'success');
+      return updated;
+    } catch (err) {
+      showToast(err.message, 'warning');
+      throw err;
+    }
+  },
+
   // Daily Tasks & Routines
   createDailyTask: async (title) => {
     const { pairing, session, showToast } = get();

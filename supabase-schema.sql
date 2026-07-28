@@ -26,6 +26,7 @@ CREATE TABLE public.profiles (
   custom_theme_primary TEXT DEFAULT '#8b5cf6', -- Primary accent color (HEX)
   custom_theme_accent TEXT DEFAULT '#ec4899',  -- Secondary accent color (HEX)
   custom_theme_mode TEXT DEFAULT 'light',      -- 'light', 'dark', 'pastel'
+  avatar_url TEXT DEFAULT NULL,                -- Custom Profile Picture URL
   praise_terms TEXT CHECK (praise_terms IS NULL OR char_length(praise_terms) <= 200),
   timezone TEXT DEFAULT 'America/Los_Angeles', -- User active timezone
   reminder_time TEXT DEFAULT '21:00', -- Daily check-in reminder time (HH:MM)
@@ -163,7 +164,9 @@ RETURNS BOOLEAN AS $$
     WHERE id = p_pairing_id 
     AND (owner_id = auth.uid() OR pet_id = auth.uid())
   );
-$$ LANGUAGE sql SECURITY DEFINER;
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp;
+
+REVOKE EXECUTE ON FUNCTION public.is_user_in_pairing(UUID) FROM anon;
 
 -- Profiles
 CREATE POLICY "Authenticated users can search and view profiles" ON public.profiles FOR SELECT USING (auth.role() = 'authenticated');
@@ -261,7 +264,7 @@ BEGIN
    NEW.updated_at = NOW();
    RETURN NEW;
 END;
-$func$ language 'plpgsql';
+$func$ LANGUAGE plpgsql SET search_path = public, pg_temp;
 
 CREATE TRIGGER update_profiles_updated_at
 BEFORE UPDATE ON public.profiles
@@ -278,6 +281,10 @@ DECLARE
   current_xp INT;
   current_level INT;
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
   SELECT xp, level INTO current_xp, current_level FROM public.profiles WHERE id = p_profile_id;
   
   current_xp := COALESCE(current_xp, 0) + p_amount;
@@ -285,53 +292,25 @@ BEGIN
   
   UPDATE public.profiles SET xp = current_xp, level = current_level WHERE id = p_profile_id;
 END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 4. RPC: Process calendar entry and calculate daily points
-CREATE OR REPLACE FUNCTION process_calendar_entry(p_pairing_id UUID, p_date DATE, p_status day_status)
-RETURNS VOID AS $func$
-DECLARE
-  target_pet_id UUID;
-  existing_status day_status;
-  green_pts INT := 1;
-  delta INT := 0;
-BEGIN
-  SELECT pet_id INTO target_pet_id FROM public.pairings WHERE id = p_pairing_id;
-  SELECT point_value_green INTO green_pts FROM public.pairings WHERE id = p_pairing_id;
-  
-  SELECT status INTO existing_status FROM public.calendar_entries 
-  WHERE pairing_id = p_pairing_id AND entry_date = p_date;
+REVOKE EXECUTE ON FUNCTION public.add_xp(UUID, INT) FROM anon;
 
-  IF FOUND THEN
-    UPDATE public.calendar_entries SET status = p_status, points_awarded = CASE WHEN p_status = 'green' THEN green_pts ELSE 0 END, updated_at = NOW() 
-    WHERE pairing_id = p_pairing_id AND entry_date = p_date;
-  ELSE
-    INSERT INTO public.calendar_entries (pairing_id, entry_date, status, points_awarded)
-    VALUES (p_pairing_id, p_date, p_status, CASE WHEN p_status = 'green' THEN green_pts ELSE 0 END);
-  END IF;
-
-  -- Points handling based on green status
-  IF p_status = 'green' AND (existing_status IS NULL OR existing_status != 'green') THEN
-    delta := COALESCE(green_pts, 1);
-  ELSIF p_status != 'green' AND existing_status = 'green' THEN
-    delta := -COALESCE(green_pts, 1);
-  END IF;
-
-  IF delta != 0 AND target_pet_id IS NOT NULL THEN
-    UPDATE public.profiles SET points_balance = GREATEST(0, COALESCE(points_balance, 0) + delta) WHERE id = target_pet_id;
-  END IF;
-END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 5. RPC: Set exact Pet points
+-- 4. RPC: Set exact Pet points
 CREATE OR REPLACE FUNCTION set_pet_points(p_pet_id UUID, p_points INT)
 RETURNS VOID AS $func$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
   UPDATE public.profiles SET points_balance = GREATEST(0, p_points) WHERE id = p_pet_id;
 END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 6. RPC: Verify Security PIN with Native Postgres Brute-Force Rate Limiting & Lockout
+REVOKE EXECUTE ON FUNCTION public.set_pet_points(UUID, INT) FROM anon;
+
+-- 5. RPC: Verify Security PIN with Native Postgres Brute-Force Rate Limiting & Lockout
 CREATE OR REPLACE FUNCTION verify_security_pin(p_user_id UUID, p_pin TEXT)
 RETURNS JSONB AS $func$
 DECLARE
@@ -395,9 +374,11 @@ BEGIN
     END IF;
   END IF;
 END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 7. RPC: Process Redemption (Approve or Deny with points refund)
+REVOKE EXECUTE ON FUNCTION public.verify_security_pin(UUID, TEXT) FROM anon;
+
+-- 6. RPC: Process Redemption (Approve or Deny with points refund)
 CREATE OR REPLACE FUNCTION process_redemption(p_redemption_id UUID, p_status redemption_status)
 RETURNS JSONB AS $func$
 DECLARE
@@ -426,9 +407,11 @@ BEGIN
     'points_spent', v_redemption.points_spent
   );
 END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 8. RPC: Cancel Redemption (Take Back Request & Refund Points - Pending Only)
+REVOKE EXECUTE ON FUNCTION public.process_redemption(UUID, redemption_status) FROM anon;
+
+-- 7. RPC: Cancel Redemption (Take Back Request & Refund Points - Pending Only)
 CREATE OR REPLACE FUNCTION cancel_redemption(p_redemption_id UUID)
 RETURNS JSONB AS $func$
 DECLARE
@@ -458,9 +441,11 @@ BEGIN
     'points_refunded', v_redemption.points_spent
   );
 END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 9. RPC: Process Calendar Entry (Atomic Status Toggle & Points Award)
+REVOKE EXECUTE ON FUNCTION public.cancel_redemption(UUID) FROM anon;
+
+-- 8. RPC: Process Calendar Entry (Atomic Status Toggle & Points Award)
 DROP FUNCTION IF EXISTS process_calendar_entry(UUID, DATE, TEXT);
 CREATE OR REPLACE FUNCTION process_calendar_entry(
   p_pairing_id UUID,
@@ -527,7 +512,9 @@ BEGIN
     'points_delta', v_delta
   );
 END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
+
+REVOKE EXECUTE ON FUNCTION public.process_calendar_entry(UUID, DATE, TEXT) FROM anon;
 
 -- MIGRATION UTILITY (Run if upgrading existing database):
 -- ALTER TABLE public.pairings ADD COLUMN IF NOT EXISTS custom_level_titles TEXT;

@@ -56,11 +56,29 @@ export const MascotAvatar = ({ profile, isEditable = false }) => {
           fontSize: '2.75rem',
           lineHeight: 1,
           boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)',
-          userSelect: 'none'
+          userSelect: 'none',
+          overflow: 'hidden',
+          position: 'relative'
         }}>
-          <span style={{ display: 'inline-block', transform: 'translateY(1px)' }}>
-            {species === 'custom' ? (profile?.custom_species_icon || '✨') : (speciesIcons[species] || '✨')}
-          </span>
+          {profile?.avatar_url ? (
+            <img 
+              src={profile.avatar_url} 
+              alt={profile?.username || 'Avatar'} 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: '50%'
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : (
+            <span style={{ display: 'inline-block', transform: 'translateY(1px)' }}>
+              {species === 'custom' ? (profile?.custom_species_icon || '✨') : (speciesIcons[species] || '✨')}
+            </span>
+          )}
         </div>
         <span style={{
           position: 'absolute',

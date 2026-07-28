@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { MascotAvatar } from '../components/MascotAvatar';
 import { getCurrencyInfo } from '../utils/currency';
 import { THEME_MODES, THEME_PRESETS } from '../utils/theme';
 import { requestNotificationPermission, scheduleLocalDailyCheckIn } from '../utils/notifications';
@@ -9,12 +10,12 @@ import { DEFAULT_LEVEL_TITLES } from '../utils/xpUtils';
 import { 
   Palette, Heart, LogOut, Unlink, Check, Shield, 
   Volume2, VolumeX, Coins, ChevronDown, ChevronUp, Zap, 
-  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe, Link, Trophy
+  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe, Link, Trophy, User, Camera
 } from 'lucide-react';
 
 /* ───── Collapsible Section Component ──────────────────────────────── */
-const Section = ({ icon, title, subtitle, accentColor = 'var(--color-primary)', children }) => {
-  const [open, setOpen] = useState(false);
+const Section = ({ icon, title, subtitle, accentColor = 'var(--color-primary)', children, defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
       <button
@@ -61,7 +62,7 @@ const Label = ({ children }) => (
 /* ═══════════════════════════════════════════════════════════════════ */
 export const Settings = () => {
   const { 
-    user, pairing, partnerProfile, 
+    user, pairing, partnerProfile, updateUserProfile,
     updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency, 
     updateCustomTheme, updatePetNickname, updateReminderTime, updateTimezone, toggleXPBar, 
     updatePairingRules, updateCustomLevelTitles, pairWithCode, unpair, setUser, soundEnabled, toggleSound, showToast 
@@ -74,6 +75,10 @@ export const Settings = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showUnpairModal, setShowUnpairModal] = useState(false);
 
+  /* Profile Details & PFP state */
+  const [avatarUrlInput, setAvatarUrlInput] = useState(user?.avatar_url || '');
+  const [usernameInput, setUsernameInput] = useState(user?.username || '');
+
   /* Pairing input state */
   const [pairUser, setPairUser] = useState('');
   const [pairCode, setPairCode] = useState('');
@@ -84,6 +89,23 @@ export const Settings = () => {
   const [customSpeciesIcon, setCustomSpeciesIcon] = useState(user?.custom_species_icon || '🐰');
   const [petNicknameInput, setPetNicknameInput] = useState(user?.pet_nickname || '');
   const [praiseTerms, setPraiseTerms] = useState(user?.praise_terms || 'Good girl!');
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+      await updateUserProfile({
+        avatar_url: avatarUrlInput.trim() || null,
+        username: usernameInput.trim() || user?.username,
+        pet_nickname: petNicknameInput.trim() || null,
+        pet_species: species,
+        praise_terms: praiseTerms.trim() || null,
+        custom_species_name: species === 'custom' ? customSpeciesName.trim() : null,
+        custom_species_icon: species === 'custom' ? customSpeciesIcon.trim() : null
+      });
+    } catch (err) {
+      // Toast already handled by store
+    }
+  };
 
   const handlePairSubmit = async (e) => {
     e.preventDefault();
@@ -386,6 +408,183 @@ export const Settings = () => {
           </button>
         </div>
       </div>
+
+      {/* ── 👤 Edit Profile & Photo Section ────────────────── */}
+      <Section
+        icon={<User />}
+        title="Edit Profile & Photo"
+        subtitle="Update your profile photo URL, display name, and persona"
+        accentColor="var(--color-primary)"
+        defaultOpen={true}
+      >
+        <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Live Profile Card Preview */}
+          <div style={{
+            padding: '1.25rem',
+            borderRadius: 'var(--border-radius-lg)',
+            background: 'var(--gradient-hero)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            boxShadow: 'var(--shadow-glow)'
+          }}>
+            <MascotAvatar 
+              profile={{
+                ...user,
+                avatar_url: avatarUrlInput.trim() || null,
+                username: usernameInput.trim() || user?.username,
+                pet_species: species,
+                custom_species_name: customSpeciesName,
+                custom_species_icon: customSpeciesIcon
+              }} 
+              isEditable={false} 
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85 }}>
+                {user?.role?.toUpperCase() || 'USER'} PREVIEW
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+                {usernameInput.trim() || user?.username || 'Username'}
+              </div>
+              <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
+                {isPet ? (petNicknameInput.trim() || praiseTerms) : (user?.uid || '')}
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Picture (PFP) URL Input */}
+          <div>
+            <Label>Profile Picture (PFP Image URL)</Label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input
+                  type="url"
+                  className="input-field"
+                  placeholder="https://example.com/photo.jpg or imgur link"
+                  value={avatarUrlInput}
+                  onChange={(e) => setAvatarUrlInput(e.target.value)}
+                  style={{ paddingLeft: '2.4rem' }}
+                />
+                <Camera size={16} color="var(--color-text-muted)" style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }} />
+              </div>
+              {avatarUrlInput && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrlInput('')}
+                  className="btn-secondary"
+                  style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.75rem' }}
+                >
+                  Clear Photo 🗑️
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.35rem' }}>
+              💡 Paste a direct image link (PNG, JPG, WebP). Leave blank to use your pet mascot emoji.
+            </div>
+          </div>
+
+          {/* Username Input */}
+          <div style={{ display: 'grid', gridTemplateColumns: isPet ? '1fr 1fr' : '1fr', gap: '0.75rem' }}>
+            <div>
+              <Label>Display Username</Label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="e.g. Master Alex"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                style={{ fontWeight: 600 }}
+              />
+            </div>
+            {isPet && (
+              <div>
+                <Label>Pet Nickname / Endearment</Label>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g. Little Fox"
+                  value={petNicknameInput}
+                  onChange={(e) => setPetNicknameInput(e.target.value)}
+                  style={{ fontWeight: 600 }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Pet Species Persona Configuration */}
+          {isPet && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', borderTop: '1px solid var(--color-border)', paddingTop: '0.85rem' }}>
+              <div>
+                <Label>Pet Species</Label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
+                  {speciesOptions.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setSpecies(opt.id)}
+                      style={{
+                        padding: '0.5rem 0.25rem',
+                        borderRadius: 'var(--border-radius)',
+                        border: species === opt.id ? `2px solid ${opt.color}` : '1px solid var(--color-border)',
+                        backgroundColor: species === opt.id ? 'var(--color-surface-hover)' : 'var(--color-surface)',
+                        fontWeight: species === opt.id ? 700 : 500,
+                        fontSize: '0.8rem',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {species === 'custom' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <Label>Custom Species Name</Label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g. Bunny, Dragon"
+                      value={customSpeciesName}
+                      onChange={(e) => setCustomSpeciesName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Emoji Icon</Label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="🐰"
+                      maxLength={4}
+                      value={customSpeciesIcon}
+                      onChange={(e) => setCustomSpeciesIcon(e.target.value)}
+                      style={{ textAlign: 'center' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label>Praise & Endearment Terms</Label>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g. Good girl!, Good boy!, Cutie"
+                  value={praiseTerms}
+                  onChange={(e) => setPraiseTerms(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <button type="submit" className="btn-primary" style={{ padding: '0.75rem', marginTop: '0.25rem' }}>
+            <Check size={16} /> Save Profile Changes
+          </button>
+        </form>
+      </Section>
 
       {/* ── 🔗 Pair Accounts Section ────────────────── */}
       <Section
