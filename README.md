@@ -115,7 +115,10 @@ npm run lint
 
 ---
 
-## 📄 License & Credits
+## 📄 License & Terms
 
 Designed & Developed for **Tamed**.  
-Licensed under the [MIT License](LICENSE).
+Licensed under the **Personal Use & Non-Redistribution License** (see [LICENSE](LICENSE)).
+
+* **Allowed**: Clone, compile, self-host, and customize for personal, private, non-commercial use.
+* **Prohibited**: Public redistribution, commercial hosting (SaaS), sub-licensing, or selling copies of this software.

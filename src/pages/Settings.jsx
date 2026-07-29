@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppStore } from '../store/useAppStore';
 import { MascotAvatar } from '../components/MascotAvatar';
 import { getCurrencyInfo } from '../utils/currency';
@@ -10,7 +11,8 @@ import { DEFAULT_LEVEL_TITLES } from '../utils/xpUtils';
 import { 
   Palette, Heart, LogOut, Unlink, Check, Shield, 
   Volume2, VolumeX, Coins, ChevronDown, ChevronUp, Zap, 
-  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe, Link, Trophy, User, Camera
+  Lock, Bell, Eye, EyeOff, Sparkles, Sliders, Globe, Link, Trophy, User, Camera, 
+  Trash2, ShieldAlert, AlertTriangle
 } from 'lucide-react';
 
 /* ───── Collapsible Section Component ──────────────────────────────── */
@@ -65,7 +67,8 @@ export const Settings = () => {
     user, pairing, partnerProfile, updateUserProfile,
     updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency, 
     updateCustomTheme, updatePetNickname, updateReminderTime, updateTimezone, toggleXPBar, 
-    updatePairingRules, updateCustomLevelTitles, pairWithCode, unpair, setUser, soundEnabled, toggleSound, showToast 
+    updatePairingRules, updateCustomLevelTitles, pairWithCode, unpair, setUser, soundEnabled, toggleSound, showToast,
+    deleteAccount
   } = useAppStore();
 
   const isPet = user?.role === 'pet';
@@ -74,6 +77,25 @@ export const Settings = () => {
   /* Modals */
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showUnpairModal, setShowUnpairModal] = useState(false);
+
+  /* 3-step account deletion modal state */
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  // Lock body scroll when account deletion modal is open
+  useEffect(() => {
+    if (showDeleteAccountModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showDeleteAccountModal]);
 
   /* Profile Details & PFP state */
   const [avatarUrlInput, setAvatarUrlInput] = useState(user?.avatar_url || '');
@@ -1186,6 +1208,43 @@ export const Settings = () => {
         </button>
       </div>
 
+      {/* ── 🚨 Danger Zone: Account Erasure Section ───────────── */}
+      <div style={{
+        marginTop: '1rem',
+        padding: '1.25rem',
+        borderRadius: 'var(--border-radius-lg)',
+        border: '1.5px solid rgba(220, 38, 38, 0.3)',
+        backgroundColor: 'rgba(220, 38, 38, 0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-red)', fontWeight: 800, fontSize: '0.95rem' }}>
+          <ShieldAlert size={20} /> Privacy & Danger Zone
+        </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>
+          Under GDPR & data privacy laws, you can permanently delete your account and request full data erasure.
+        </p>
+        <button
+          onClick={() => {
+            setDeleteStep(1);
+            setDeleteConfirmText('');
+            setDeletePassword('');
+            setShowDeleteAccountModal(true);
+          }}
+          className="btn-secondary"
+          style={{
+            color: 'var(--color-red)',
+            borderColor: 'var(--color-red)',
+            backgroundColor: 'rgba(220, 38, 38, 0.08)',
+            fontWeight: 700,
+            fontSize: '0.85rem'
+          }}
+        >
+          <Trash2 size={16} /> Delete My Account & Personal Data
+        </button>
+      </div>
+
       {/* ── High-Friction Unpair Modal ──────────────────────── */}
       <ConfirmationModal
         isOpen={showUnpairModal}
@@ -1214,6 +1273,189 @@ export const Settings = () => {
         }}
         onClose={() => setShowLogoutModal(false)}
       />
+
+      {/* ── 🚨 3-Step Permanent Account Erasure Modal (GDPR / Privacy Compliance) ────── */}
+      {showDeleteAccountModal && createPortal(
+        <div 
+          style={{
+            position: 'fixed', inset: 0, zIndex: 999999,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+          }}
+          onClick={() => {
+            if (!isDeletingAccount) {
+              setShowDeleteAccountModal(false);
+              setDeleteStep(1);
+              setDeleteConfirmText('');
+              setDeletePassword('');
+            }
+          }}
+        >
+          <div 
+            className="card" 
+            style={{
+              maxWidth: '460px', width: '100%', padding: '1.5rem',
+              border: '2px solid var(--color-red)', boxShadow: '0 20px 40px rgba(220, 38, 38, 0.25)',
+              display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <div style={{ padding: '0.6rem', borderRadius: '50%', backgroundColor: 'rgba(220, 38, 38, 0.12)', color: 'var(--color-red)', flexShrink: 0 }}>
+                <ShieldAlert size={26} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.1rem', color: 'var(--color-red)', fontWeight: 800 }}>
+                  {deleteStep === 1 && "Step 1/3: Permanent Erasure Warning"}
+                  {deleteStep === 2 && "Step 2/3: Confirm Deletion Intent"}
+                  {deleteStep === 3 && "Step 3/3: Verify Password"}
+                </h2>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                  GDPR & Privacy Right to Erasure
+                </span>
+              </div>
+            </div>
+
+            {/* STEP 1: CONSEQUENCE WARNING */}
+            {deleteStep === 1 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-main)', lineHeight: '1.5' }}>
+                  Under Data Protection laws, deleting your account permanently purges all your stored data. This action is <strong>irreversible</strong> and will immediately destroy:
+                </p>
+                <ul style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <li>Your user profile, display name, and avatar PFP photo</li>
+                  <li>All daily routines, check-in calendar logs, and reward history</li>
+                  <li>Active pairing connections and total accumulated point balance</li>
+                </ul>
+                <div style={{
+                  padding: '0.75rem', borderRadius: '8px',
+                  backgroundColor: 'rgba(220, 38, 38, 0.08)', border: '1px solid rgba(220, 38, 38, 0.3)',
+                  fontSize: '0.78rem', color: 'var(--color-red)', fontWeight: 700
+                }}>
+                  ⚠️ Notice: Once deleted, your account and data cannot be recovered.
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteAccountModal(false)}
+                    className="btn-secondary"
+                    style={{ width: 'auto', padding: '0.5rem 1rem' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteStep(2)}
+                    className="btn-primary"
+                    style={{ width: 'auto', padding: '0.5rem 1.15rem', backgroundColor: 'var(--color-red)', borderColor: 'var(--color-red)' }}
+                  >
+                    I Understand, Continue (1/3) ➔
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: CONFIRMATION WORD "DELETE" */}
+            {deleteStep === 2 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-main)', lineHeight: '1.5' }}>
+                  To prevent accidental or unauthorized deletion, please type <strong>DELETE</strong> in all capital letters below to confirm your intent:
+                </p>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="Type DELETE to confirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  style={{ fontWeight: 800, letterSpacing: '0.05em', textAlign: 'center' }}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteStep(1)}
+                    className="btn-secondary"
+                    style={{ width: 'auto', padding: '0.5rem 1rem' }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteConfirmText !== 'DELETE'}
+                    onClick={() => setDeleteStep(3)}
+                    className="btn-primary"
+                    style={{
+                      width: 'auto', padding: '0.5rem 1.15rem',
+                      backgroundColor: deleteConfirmText === 'DELETE' ? 'var(--color-red)' : 'var(--color-text-muted)',
+                      borderColor: deleteConfirmText === 'DELETE' ? 'var(--color-red)' : 'var(--color-border)',
+                      opacity: deleteConfirmText === 'DELETE' ? 1 : 0.5,
+                      cursor: deleteConfirmText === 'DELETE' ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    Confirm Intent (2/3) ➔
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: PASSWORD VERIFICATION & ERASURE */}
+            {deleteStep === 3 && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!deletePassword) return;
+                  try {
+                    setIsDeletingAccount(true);
+                    await deleteAccount(deletePassword);
+                    setShowDeleteAccountModal(false);
+                  } catch (err) {
+                    setIsDeletingAccount(false);
+                  }
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
+              >
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-main)', lineHeight: '1.5' }}>
+                  For security verification, enter your account password to authorize permanent account erasure:
+                </p>
+                <input
+                  type="password"
+                  className="input-field"
+                  placeholder="Enter your account password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  required
+                  style={{ fontWeight: 600 }}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    disabled={isDeletingAccount}
+                    onClick={() => setDeleteStep(2)}
+                    className="btn-secondary"
+                    style={{ width: 'auto', padding: '0.5rem 1rem' }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!deletePassword || isDeletingAccount}
+                    className="btn-primary"
+                    style={{
+                      width: 'auto', padding: '0.5rem 1.15rem',
+                      backgroundColor: 'var(--color-red)', borderColor: 'var(--color-red)',
+                      opacity: (!deletePassword || isDeletingAccount) ? 0.6 : 1
+                    }}
+                  >
+                    <Trash2 size={16} /> {isDeletingAccount ? "Erasing Data..." : "PERMANENTLY ERASE ACCOUNT"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );

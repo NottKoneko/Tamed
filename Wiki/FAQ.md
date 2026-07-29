@@ -29,3 +29,8 @@ Under **Settings > Persona & Customization**, you can update your species avatar
 
 ### Q: Is my data secure?
 Yes. Tamed enforces PostgreSQL **Row-Level Security (RLS)** in Supabase so only you and your paired partner can access your calendar logs, daily tasks, and praise cards. Cryptographically secure random number generators (`window.crypto.getRandomValues`) generate all pairing keys.
+
+---
+
+### Q: Can I clone or self-host this repository?
+**Yes, for personal use.** Under the [Personal Use & Non-Redistribution License](LICENSE), anyone is free to clone, self-host, and modify the source code for their own private, personal use. Public redistribution, sub-licensing, or hosting as a commercial SaaS product is strictly prohibited.

@@ -411,6 +411,37 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  // Permanent Account & Data Erasure (GDPR / Data Privacy Compliance)
+  deleteAccount: async (password) => {
+    const { user, session, showToast } = get();
+    if (!user) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.deleteAccount(user.id, password);
+      } else {
+        await mockBackend.deleteAccount(user.id, password);
+      }
+      set({
+        user: null,
+        profile: null,
+        session: null,
+        pairing: null,
+        partnerProfile: null,
+        dailyTasks: [],
+        calendarEntries: [],
+        proposals: [],
+        rewardItems: [],
+        redemptions: [],
+        nudges: []
+      });
+      showToast('Your account and personal data have been permanently erased.', 'info');
+      return true;
+    } catch (err) {
+      showToast(err.message, 'warning');
+      throw err;
+    }
+  },
+
   // Daily Tasks & Routines
   createDailyTask: async (title) => {
     const { pairing, session, showToast } = get();

@@ -53,6 +53,30 @@ export const supabaseBackend = {
     }, 350);
   },
 
+  deleteAccount: async (userId, password) => {
+    if (!supabase) return null;
+    
+    // 1. Re-authenticate user to confirm password identity before permanent erasure
+    const { data: userRes, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userRes?.user?.email) throw new Error("Could not verify session user.");
+
+    const { error: authErr } = await supabase.auth.signInWithPassword({
+      email: userRes.user.email,
+      password: password
+    });
+    if (authErr) {
+      throw new Error("Password verification failed. Incorrect password.");
+    }
+
+    // 2. Permanently delete user profile row (Cascades all user data)
+    const { error: deleteErr } = await supabase.from('profiles').delete().eq('id', userId);
+    if (deleteErr) throw deleteErr;
+
+    // 3. Terminate active Supabase auth session
+    await supabase.auth.signOut();
+    return true;
+  },
+
   getPairing: async (userId) => {
     if (!supabase) return null;
     const { data, error } = await supabase

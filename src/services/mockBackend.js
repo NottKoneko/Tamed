@@ -222,6 +222,21 @@ class MockBackend {
     return profile;
   }
 
+  async deleteAccount(userId, password) {
+    await delay();
+    const idx = db.profiles.findIndex(p => p.id === userId);
+    if (idx === -1) throw new Error("Account not found");
+
+    if (password && password.length < 3) {
+      throw new Error("Invalid password provided for verification.");
+    }
+
+    db.profiles.splice(idx, 1);
+    db.pairings = db.pairings.filter(p => p.owner_id !== userId && p.pet_id !== userId);
+    this.notify('ACCOUNT_DELETED', { userId });
+    return true;
+  }
+
   async getProfile(id) {
     await delay();
     return db.profiles.find(p => p.id === id);
