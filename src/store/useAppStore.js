@@ -927,24 +927,6 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  setCalendarStatus: async (dateStr, status) => {
-    const { pairing, session, showToast } = get();
-    if (!pairing) return;
-    try {
-      if (isSupabaseConfigured && session) {
-        await supabaseBackend.setCalendarEntry(pairing.id, dateStr, status);
-      } else {
-        await mockBackend.setCalendarEntry(pairing.id, dateStr, status);
-      }
-      await get().loadPairingData();
-      playSound('click');
-      if (status === 'green') triggerConfetti();
-      showToast(`Marked ${dateStr} as ${status.toUpperCase()}`, 'success');
-    } catch (err) {
-      showToast(err.message, 'warning');
-    }
-  },
-
   updatePraiseAndSpecies: async (species, praiseTerms, customSpeciesName = null, customSpeciesIcon = null, customThemePrimary = null, customThemeAccent = null) => {
     const { user, session, showToast } = get();
     if (!user) return;

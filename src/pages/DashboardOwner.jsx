@@ -49,11 +49,11 @@ export const DashboardOwner = () => {
         )}
       </div>
 
-      {/* Reminders & Instant Nudges */}
-      <RemindersSection isOwner={true} />
-
-      {/* Calendar (Owner edit mode) */}
+      {/* 2nd Card: Calendar (Moved to second to top card) */}
       <Calendar isOwner={true} />
+
+      {/* 3rd Card: Reminders & Instant Nudges */}
+      <RemindersSection isOwner={true} />
     </div>
   );
 };

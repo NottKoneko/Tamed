@@ -60,7 +60,10 @@ export const DashboardPet = () => {
         </div>
       </div>
 
-      {/* Gamification Stats */}
+      {/* 2nd Card: Interactive Calendar (Moved to second to top card) */}
+      <Calendar isOwner={false} />
+
+      {/* 3rd Card: Gamification Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
           <div style={{ padding: '0.625rem', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)' }}>
@@ -94,9 +97,6 @@ export const DashboardPet = () => {
 
       {/* Active Reminders & Nudges */}
       <RemindersSection isOwner={false} />
-
-      {/* Interactive Calendar */}
-      <Calendar isOwner={false} />
     </div>
   );
 };
