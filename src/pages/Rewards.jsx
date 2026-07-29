@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { formatCurrency, getCurrencyInfo } from '../utils/currency';
 import { PinModal } from '../components/PinModal';
-import { Gift, Plus, Trash2, CheckCircle2, XCircle, Clock, Sparkles, Send, Tag, ShoppingBag, History, Lock, MoreVertical, RotateCcw } from 'lucide-react';
+import { Gift, Plus, Trash2, CheckCircle2, XCircle, Clock, Sparkles, Send, Tag, ShoppingBag, History, Lock, MoreVertical, RotateCcw, Edit3, Check } from 'lucide-react';
 
 export const Rewards = () => {
   const { 
@@ -13,7 +13,8 @@ export const Rewards = () => {
     rewardItems, 
     redemptions, 
     createRewardItem, 
-    deleteRewardItem, 
+    deleteRewardItem,
+    updateRewardItem,
     submitRewardProposal,
     redeemStoreItem,
     processProposal,
@@ -42,6 +43,12 @@ export const Rewards = () => {
   const [storeItemName, setStoreItemName] = useState('');
   const [storeItemDesc, setStoreItemDesc] = useState('');
   const [storeItemPoints, setStoreItemPoints] = useState(1);
+
+  // Edit store item state
+  const [editingItem, setEditingItem] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editCost, setEditCost] = useState(1);
 
   // Owner point cost assignment per proposal ID
   const [assignedCosts, setAssignedCosts] = useState({});
@@ -427,10 +434,18 @@ export const Rewards = () => {
       )}
 
       {/* REWARD STORE CATALOG */}
-      <div>
+      <div style={{ position: 'relative' }}>
         <h2 style={{ fontSize: '1.15rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <ShoppingBag size={20} color="var(--color-primary)" /> Reward Store Catalog
         </h2>
+
+        {/* Global Backdrop for Store Catalog 3-Dots Menu */}
+        {activeMenuId && (
+          <div 
+            style={{ position: 'fixed', inset: 0, zIndex: 90 }} 
+            onClick={() => setActiveMenuId(null)} 
+          />
+        )}
 
         {(rewardItems || []).length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--color-text-muted)' }}>
@@ -442,8 +457,107 @@ export const Rewards = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
             {(rewardItems || []).map((item) => {
               const canAfford = petPoints >= item.point_cost;
+              const isItemMenuOpen = activeMenuId === `item-${item.id}`;
+              const isEditingThisItem = editingItem?.id === item.id;
+
+              if (isEditingThisItem) {
+                return (
+                  <form
+                    key={item.id}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!editName.trim()) return;
+                      updateRewardItem(item.id, editName.trim(), editDesc.trim(), editCost);
+                      setEditingItem(null);
+                    }}
+                    className="card"
+                    style={{
+                      border: '2px solid var(--color-primary)',
+                      backgroundColor: 'var(--color-surface)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                      padding: '1.25rem'
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Edit3 size={16} /> Edit Store Reward Item
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                          REWARD NAME
+                        </label>
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder="Item Name"
+                          required
+                          style={{ fontWeight: 600 }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                          COST (PTS)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="input-field"
+                          value={editCost}
+                          onChange={(e) => setEditCost(e.target.value)}
+                          style={{ fontWeight: 700, textAlign: 'center' }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                        DESCRIPTION (OPTIONAL)
+                      </label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        placeholder="Details or terms"
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.25rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem(null)}
+                        className="btn-secondary"
+                        style={{ width: 'auto', padding: '0.45rem 0.85rem', fontSize: '0.8rem' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        style={{ width: 'auto', padding: '0.45rem 1rem', fontSize: '0.8rem' }}
+                      >
+                        <Check size={14} /> Save Reward
+                      </button>
+                    </div>
+                  </form>
+                );
+              }
+
               return (
-                <div key={item.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div 
+                  key={item.id} 
+                  className="card" 
+                  style={{ 
+                    display: 'flex', 
+                    justify: 'space-between', 
+                    alignItems: 'center', 
+                    position: 'relative',
+                    zIndex: isItemMenuOpen ? 100 : 1,
+                    transition: 'z-index 0s, transform 0.2s ease, box-shadow 0.2s ease'
+                  }}
+                >
                   <div style={{ flex: 1, paddingRight: '0.75rem' }}>
                     <h3 style={{ fontSize: '1.05rem', marginBottom: '0.25rem' }}>{item.name}</h3>
                     {item.description && (
@@ -462,13 +576,97 @@ export const Rewards = () => {
 
                   <div>
                     {isOwner ? (
-                      <button
-                        onClick={() => deleteRewardItem(item.id)}
-                        style={{ padding: '0.5rem', color: 'var(--color-red)' }}
-                        title="Remove from store"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(isItemMenuOpen ? null : `item-${item.id}`);
+                          }}
+                          style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            backgroundColor: isItemMenuOpen ? 'var(--color-surface-hover)' : 'transparent',
+                            border: isItemMenuOpen ? '1px solid var(--color-primary)' : '1px solid transparent',
+                            cursor: 'pointer',
+                            color: isItemMenuOpen ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justify: 'center',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Options"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+
+                        {isItemMenuOpen && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: 'calc(100% + 6px)',
+                              backgroundColor: 'var(--color-surface)',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '12px',
+                              boxShadow: '0 16px 36px -4px rgba(0, 0, 0, 0.3), 0 6px 16px -2px rgba(0, 0, 0, 0.15)',
+                              zIndex: 9999,
+                              minWidth: '170px',
+                              padding: '0.375rem',
+                              backdropFilter: 'blur(16px)',
+                              WebkitBackdropFilter: 'blur(16px)'
+                            }}
+                          >
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                setEditingItem(item);
+                                setEditName(item.name);
+                                setEditCost(item.point_cost);
+                                setEditDesc(item.description || '');
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.6rem 0.75rem',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                border: 'none',
+                                background: 'none',
+                                fontSize: '0.825rem',
+                                fontWeight: 600,
+                                color: 'var(--color-text-main)',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Edit3 size={15} color="var(--color-primary)" /> Edit Reward Item
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                deleteRewardItem(item.id);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.6rem 0.75rem',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                border: 'none',
+                                background: 'none',
+                                fontSize: '0.825rem',
+                                fontWeight: 600,
+                                color: 'var(--color-red)',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Trash2 size={15} color="var(--color-red)" /> Delete Item
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <button
                         onClick={() => redeemStoreItem(item)}

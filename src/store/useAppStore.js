@@ -371,6 +371,28 @@ export const useAppStore = create((set, get) => ({
   updateUserProfile: async (updates) => {
     const { user, session, showToast } = get();
     if (!user) return;
+
+    // Sliding window rate limit check for display name & nickname changes (Max 3 changes per 60s)
+    const isNameChanged = (updates.username && updates.username !== user.username) || 
+                          (updates.pet_nickname !== undefined && updates.pet_nickname !== user.pet_nickname);
+
+    if (isNameChanged) {
+      // 1. Short-term burst check: Max 3 changes per 60 seconds
+      const burstCheck = checkRateLimit(`name_change_burst:${user.id}`, 3, 60000);
+      if (!burstCheck.allowed) {
+        showToast(`Rate limit reached: Please wait ${burstCheck.retryAfterSeconds}s before changing your display name again. ⏳`, 'warning');
+        return;
+      }
+
+      // 2. Persistent daily check: Max 5 changes per 24 hours (86,400,000 ms)
+      const dailyCheck = checkRateLimit(`name_change_daily:${user.id}`, 5, 86400000);
+      if (!dailyCheck.allowed) {
+        const hoursRemaining = Math.ceil(dailyCheck.retryAfterSeconds / 3600);
+        showToast(`Daily limit reached: Display name can be changed max 5 times per day. Try again in ~${hoursRemaining} hour(s). ⏳`, 'warning');
+        return;
+      }
+    }
+
     try {
       let updated;
       if (isSupabaseConfigured && session) {
@@ -752,6 +774,22 @@ export const useAppStore = create((set, get) => ({
       }
       await get().loadPairingData();
       showToast('Reward item removed', 'info');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  },
+
+  updateRewardItem: async (itemId, name, description, pointCost) => {
+    const { session, showToast } = get();
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.updateRewardItem(itemId, name, description, pointCost);
+      } else {
+        await mockBackend.updateRewardItem(itemId, name, description, pointCost);
+      }
+      await get().loadPairingData();
+      playSound('click');
+      showToast(`Updated "${name}" in Store!`, 'success');
     } catch (err) {
       showToast(err.message, 'warning');
     }

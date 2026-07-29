@@ -33,7 +33,8 @@ CREATE TABLE public.profiles (
   show_xp_bar BOOLEAN DEFAULT TRUE,   -- Toggle visibility of XP progress bar
   pairing_pin TEXT DEFAULT NULL,      -- 4-digit security PIN for sensitive actions
   failed_pin_attempts INTEGER DEFAULT 0, -- Track failed security PIN attempts
-  locked_until TIMESTAMPTZ DEFAULT NULL, -- Database-level PIN brute-force lockout timestamp
+  name_changes_today INTEGER DEFAULT 0,       -- Track daily display name changes
+  last_name_change_date DATE DEFAULT CURRENT_DATE, -- Date of last display name change
   points_balance INTEGER DEFAULT 0,
   xp INTEGER DEFAULT 0,
   level INTEGER DEFAULT 1,
@@ -273,6 +274,33 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_pairings_updated_at
 BEFORE UPDATE ON public.pairings
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 2b. Trigger function for Database-Enforced Display Name Rate Limiting (Max 5 per day)
+CREATE OR REPLACE FUNCTION check_display_name_rate_limit()
+RETURNS TRIGGER AS $func$
+BEGIN
+  IF (NEW.username IS DISTINCT FROM OLD.username) OR (NEW.pet_nickname IS DISTINCT FROM OLD.pet_nickname) THEN
+    IF OLD.last_name_change_date IS NULL OR OLD.last_name_change_date < CURRENT_DATE THEN
+      NEW.name_changes_today := 1;
+      NEW.last_name_change_date := CURRENT_DATE;
+    ELSE
+      IF COALESCE(OLD.name_changes_today, 0) >= 5 THEN
+        RAISE EXCEPTION 'Daily display name change limit reached (max 5 changes per day). Please try again tomorrow.';
+      END IF;
+
+      NEW.name_changes_today := COALESCE(OLD.name_changes_today, 0) + 1;
+      NEW.last_name_change_date := CURRENT_DATE;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$func$ LANGUAGE plpgsql SET search_path = public, pg_temp;
+
+DROP TRIGGER IF EXISTS enforce_display_name_rate_limit ON public.profiles;
+CREATE TRIGGER enforce_display_name_rate_limit
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION check_display_name_rate_limit();
 
 -- 3. RPC: Add XP and handle leveling logic
 CREATE OR REPLACE FUNCTION add_xp(p_profile_id UUID, p_amount INT)

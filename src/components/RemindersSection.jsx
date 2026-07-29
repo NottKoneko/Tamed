@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { UserAvatar } from './UserAvatar';
 import { Bell, Zap, Plus, Trash2, Clock, Calendar as CalendarIcon, Sparkles, Send } from 'lucide-react';
 
 export const RemindersSection = ({ isOwner = false }) => {
@@ -151,14 +152,18 @@ export const RemindersSection = ({ isOwner = false }) => {
                     border: '1px solid var(--color-border)',
                     display: 'flex',
                     justify: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    gap: '0.75rem'
                   }}
                 >
-                  <div>
-                    <strong style={{ fontSize: '0.875rem', display: 'block' }}>{nudge.title}</strong>
-                    {nudge.message && <span style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)' }}>{nudge.message}</span>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <UserAvatar profile={partnerProfile} size={30} border={true} />
+                    <div>
+                      <strong style={{ fontSize: '0.875rem', display: 'block' }}>{nudge.title}</strong>
+                      {nudge.message && <span style={{ fontSize: '0.775rem', color: 'var(--color-text-muted)' }}>{nudge.message}</span>}
+                    </div>
                   </div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>
                     {new Date(nudge.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>

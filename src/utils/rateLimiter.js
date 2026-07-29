@@ -1,9 +1,34 @@
 /**
  * Sliding Window Client-Side Rate Limiter
  * Provides immediate UX feedback to prevent UI spam, rapid double submits, and brute-force attempts.
+ * Supports localStorage persistence so long-term daily limits survive page refreshes.
  */
 
-const attempts = new Map();
+const memoryAttempts = new Map();
+
+const getStoredAttempts = (key, windowMs) => {
+  const now = Date.now();
+  let list = memoryAttempts.get(key) || [];
+
+  try {
+    const raw = localStorage.getItem(`tamed_rl_${key}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        list = parsed;
+      }
+    }
+  } catch (e) {}
+
+  return list.filter(timestamp => now - timestamp < windowMs);
+};
+
+const saveStoredAttempts = (key, list) => {
+  memoryAttempts.set(key, list);
+  try {
+    localStorage.setItem(`tamed_rl_${key}`, JSON.stringify(list));
+  } catch (e) {}
+};
 
 /**
  * Checks whether an action is allowed based on max attempts within a time window.
@@ -15,7 +40,7 @@ const attempts = new Map();
  */
 export const checkRateLimit = (key, maxAttempts = 5, windowMs = 60000) => {
   const now = Date.now();
-  const userAttempts = (attempts.get(key) || []).filter(timestamp => now - timestamp < windowMs);
+  const userAttempts = getStoredAttempts(key, windowMs);
 
   if (userAttempts.length >= maxAttempts) {
     const oldestAttempt = userAttempts[0];
@@ -28,7 +53,7 @@ export const checkRateLimit = (key, maxAttempts = 5, windowMs = 60000) => {
   }
 
   userAttempts.push(now);
-  attempts.set(key, userAttempts);
+  saveStoredAttempts(key, userAttempts);
 
   return {
     allowed: true,
@@ -41,5 +66,8 @@ export const checkRateLimit = (key, maxAttempts = 5, windowMs = 60000) => {
  * Resets rate limit attempts for a given key upon successful verification.
  */
 export const resetRateLimit = (key) => {
-  attempts.delete(key);
+  memoryAttempts.delete(key);
+  try {
+    localStorage.removeItem(`tamed_rl_${key}`);
+  } catch (e) {}
 };

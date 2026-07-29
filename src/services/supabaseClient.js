@@ -267,6 +267,22 @@ export const supabaseBackend = {
     return true;
   },
 
+  updateRewardItem: async (itemId, name, description, pointCost) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('reward_items')
+      .update({
+        name,
+        description: description || '',
+        point_cost: parseInt(pointCost, 10) || 0
+      })
+      .eq('id', itemId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   getRedemptions: async (pairingId) => {
     if (!supabase) return [];
     const { data, error } = await supabase.from('redemptions').select('*').eq('pairing_id', pairingId).order('created_at', { ascending: false });

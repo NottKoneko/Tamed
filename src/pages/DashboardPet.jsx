@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Calendar } from '../components/Calendar';
 import { RemindersSection } from '../components/RemindersSection';
+import { UserAvatar } from '../components/UserAvatar';
 import { Sparkles, Trophy, Gift } from 'lucide-react';
 
 export const DashboardPet = () => {
@@ -9,13 +10,6 @@ export const DashboardPet = () => {
 
   const totalPoints = user?.points_balance || 0;
   const greenDaysCount = (calendarEntries || []).filter((e) => e.status === 'green').length;
-
-  const speciesIcon = {
-    puppy: '🐶',
-    kitty: '🐱',
-    fox: '🦊',
-    custom: '✨'
-  }[user?.pet_species || 'puppy'];
 
   if (!pairing) {
     return (
@@ -44,15 +38,24 @@ export const DashboardPet = () => {
         border: '2px solid var(--color-primary-light)',
         boxShadow: 'var(--shadow-glow)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.75rem' }}>{speciesIcon}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.25rem' }}>
+          <UserAvatar profile={user} size={54} border={true} />
           <div>
-            <h1 style={{ fontSize: '1.35rem', color: 'var(--color-primary-dark)' }}>
-              {user?.praise_terms || 'Good girl!'} {user?.username} ♡
+            <h1 style={{ fontSize: '1.35rem', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              {user?.praise_terms || 'Good girl!'} {user?.username} <span style={{ color: 'var(--color-accent)' }}>♡</span>
             </h1>
-            <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
-              {partnerProfile ? `Paired with ${partnerProfile.username}` : 'Green days earn reward points!'}
-            </p>
+            {partnerProfile ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem' }}>
+                <UserAvatar profile={partnerProfile} size={22} border={true} />
+                <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                  Paired with <strong style={{ color: 'var(--color-text-main)' }}>{partnerProfile.username}</strong> 👑
+                </span>
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
+                Green days earn reward points!
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { MascotAvatar } from '../components/MascotAvatar';
+import { UserAvatar } from '../components/UserAvatar';
 import { XPProgressBar } from '../components/XPProgressBar';
 import { formatCurrency, getCurrencyInfo } from '../utils/currency';
 import { 
@@ -280,11 +281,16 @@ export const Home = () => {
                   ? `Managing ${partnerProfile?.pet_nickname || partnerProfile?.username || 'Pet'}` 
                   : `${user?.praise_terms || 'Good girl!'} ${user?.pet_nickname || user?.username}`}
               </h1>
-              <p style={{ fontSize: '0.825rem', opacity: 0.9, marginTop: '0.25rem' }}>
-                {isOwner 
-                  ? `Paired with ${partnerProfile?.pet_nickname || partnerProfile?.username || 'No Pet'} (${partnerProfile?.uid || ''})` 
-                  : `Paired with ${partnerProfile?.username || 'Owner'}`}
-              </p>
+              <div style={{ fontSize: '0.825rem', opacity: 0.9, marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                {partnerProfile && (
+                  <UserAvatar profile={partnerProfile} size={22} border={false} />
+                )}
+                <span>
+                  {isOwner 
+                    ? `Paired with ${partnerProfile?.pet_nickname || partnerProfile?.username || 'No Pet'} (${partnerProfile?.uid || ''})` 
+                    : `Paired with ${partnerProfile?.username || 'Owner'}`}
+                </span>
+              </div>
 
               <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: 'white', backdropFilter: 'blur(4px)' }}>

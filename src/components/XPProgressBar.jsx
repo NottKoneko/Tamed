@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useAppStore } from '../store/useAppStore';
+import { UserAvatar } from './UserAvatar';
 import { Sparkles, Trophy, ChevronRight, Zap, X, Check, Lock, Info } from 'lucide-react';
 import { getXPProgressDetails, getLevelTitle } from '../utils/xpUtils';
 
 export const XPProgressBar = ({ xp = 0, customTitles = null }) => {
   const [showRoadmapModal, setShowRoadmapModal] = useState(false);
+  const { user } = useAppStore();
 
   const details = getXPProgressDetails(xp);
   const currentLevel = details.level;
@@ -66,17 +69,21 @@ export const XPProgressBar = ({ xp = 0, customTitles = null }) => {
         }}>
           {/* Floating Current Progression Rank */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0 }}>
-            <div style={{
-              padding: '0.35rem',
-              borderRadius: 'var(--border-radius)',
-              backgroundColor: 'rgba(139, 92, 246, 0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justify: 'center',
-              flexShrink: 0
-            }}>
-              <Trophy size={16} color="var(--color-primary)" />
-            </div>
+            {user?.avatar_url ? (
+              <UserAvatar profile={user} size={30} border={true} />
+            ) : (
+              <div style={{
+                padding: '0.35rem',
+                borderRadius: 'var(--border-radius)',
+                backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'center',
+                flexShrink: 0
+              }}>
+                <Trophy size={16} color="var(--color-primary)" />
+              </div>
+            )}
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary-dark)', letterSpacing: '0.04em' }}>
                 Current Rank

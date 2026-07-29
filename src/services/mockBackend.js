@@ -231,6 +231,25 @@ class MockBackend {
     await delay();
     const idx = db.profiles.findIndex(p => p.id === id);
     if (idx > -1) {
+      const current = db.profiles[idx];
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const isNameChange = (updates.username && updates.username !== current.username) ||
+                           (updates.pet_nickname !== undefined && updates.pet_nickname !== current.pet_nickname);
+
+      if (isNameChange) {
+        if (current.last_name_change_date !== todayStr) {
+          updates.name_changes_today = 1;
+          updates.last_name_change_date = todayStr;
+        } else {
+          if ((current.name_changes_today || 0) >= 5) {
+            throw new Error("Daily display name change limit reached (max 5 changes per day). Please try again tomorrow.");
+          }
+          updates.name_changes_today = (current.name_changes_today || 0) + 1;
+          updates.last_name_change_date = todayStr;
+        }
+      }
+
       db.profiles[idx] = { ...db.profiles[idx], ...updates };
       this.notify('PROFILE_UPDATED', db.profiles[idx]);
       return db.profiles[idx];
@@ -643,6 +662,22 @@ class MockBackend {
     await delay();
     db.reward_items = db.reward_items.filter(r => r.id !== itemId);
     this.notify('REWARD_ITEM_DELETED', { itemId });
+  }
+
+  async updateRewardItem(itemId, name, description, pointCost) {
+    await delay();
+    const idx = db.reward_items.findIndex(r => r.id === itemId);
+    if (idx > -1) {
+      db.reward_items[idx] = {
+        ...db.reward_items[idx],
+        name,
+        description: description || '',
+        point_cost: parseInt(pointCost, 10)
+      };
+      this.notify('REWARD_ITEM_UPDATED', db.reward_items[idx]);
+      return db.reward_items[idx];
+    }
+    throw new Error("Reward item not found");
   }
 
   // --- 3. REDEMPTIONS ---
