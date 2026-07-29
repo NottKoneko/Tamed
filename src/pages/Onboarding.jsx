@@ -157,22 +157,19 @@ export const Onboarding = () => {
     <div className="page-container" style={{ justifyContent: 'center', minHeight: '100vh', padding: '1.5rem 1.25rem 3rem' }}>
       
       {/* Top Brand Header */}
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <div style={{
-          display: 'inline-flex',
-          padding: '1rem',
-          borderRadius: '50%',
-          backgroundImage: 'var(--gradient-hero)',
-          color: '#ffffff',
-          boxShadow: 'var(--shadow-glow)',
-          marginBottom: '0.75rem'
-        }}>
-          <Heart size={36} fill="#ffffff" />
-        </div>
-        <h1 style={{ fontSize: '2.25rem', letterSpacing: '-0.03em', background: 'var(--gradient-hero)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Tamed
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '0.25rem', fontWeight: 500 }}>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <img 
+          src="/logo.png" 
+          alt="Tamed Logo" 
+          style={{ 
+            height: '115px', 
+            width: 'auto', 
+            objectFit: 'contain',
+            marginBottom: '0.25rem', 
+            filter: 'drop-shadow(0 12px 24px rgba(219, 39, 119, 0.25))'
+          }} 
+        />
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: '0.1rem', fontWeight: 500 }}>
           Relationship routine & reward system for couples
         </p>
 
