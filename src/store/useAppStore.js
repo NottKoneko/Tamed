@@ -1204,15 +1204,49 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  deleteAccount: async (password) => {
+    const { user, session, signOut, showToast } = get();
+    if (!user) return;
+    try {
+      if (isSupabaseConfigured && session) {
+        await supabaseBackend.deleteAccount(user.id, password);
+      } else {
+        await mockBackend.deleteAccount(user.id, password);
+      }
+      showToast('Account permanently erased.', 'info');
+      await signOut();
+    } catch (err) {
+      showToast(err.message || 'Failed to delete account.', 'warning');
+      throw err;
+    }
+  },
+
   signOut: async () => {
     const { realtimeChannel } = get();
-    if (supabase) {
-      await supabase.auth.signOut();
+    try {
+      if (isSupabaseConfigured && supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (e) {
+      console.warn('Supabase signout warning:', e);
     }
+
     if (realtimeChannel && supabase) {
-      supabase.removeChannel(realtimeChannel);
+      try {
+        supabase.removeChannel(realtimeChannel);
+      } catch (e) {}
     }
-    set({ session: null, user: null, profile: null, pairing: null, partnerProfile: null, realtimeChannel: null });
+
+    set({
+      session: null,
+      user: null,
+      profile: null,
+      pairing: null,
+      partnerProfile: null,
+      realtimeChannel: null,
+      activeTab: 'home'
+    });
+
     get().showToast('Logged out successfully.', 'info');
   }
 }));

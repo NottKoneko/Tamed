@@ -67,7 +67,7 @@ export const Settings = () => {
     user, pairing, partnerProfile, updateUserProfile,
     updatePraiseAndSpecies, updatePairingPointValues, updatePairingCurrency, 
     updateCustomTheme, updatePetNickname, updateReminderTime, updateTimezone, toggleXPBar, 
-    updatePairingRules, updateCustomLevelTitles, pairWithCode, unpair, setUser, soundEnabled, toggleSound, showToast,
+    updatePairingRules, updateCustomLevelTitles, pairWithCode, unpair, signOut, soundEnabled, toggleSound, showToast,
     deleteAccount
   } = useAppStore();
 
@@ -1267,9 +1267,9 @@ export const Settings = () => {
         message="Are you sure you want to log out of your session?"
         confirmText="Log Out"
         danger={false}
-        onConfirm={() => {
-          setUser(null);
+        onConfirm={async () => {
           setShowLogoutModal(false);
+          await signOut();
         }}
         onClose={() => setShowLogoutModal(false)}
       />
