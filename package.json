@@ -1,5 +1,6 @@
 {
   "name": "petowner-site",
+  "description": "The ultimate gamified routine tracking, positive reinforcement & reward management app for couples.",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "version": "0.0.0",
