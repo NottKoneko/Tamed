@@ -26,6 +26,7 @@
 | [**Owner Guide**](Owner-Guide) | Daily task creation, calendar status logging, praise cards, & reward approvals. | Owner Persona |
 | [**Pet Guide**](Pet-Guide) | Daily task checklists, earning XP, mascot customization, and reward redemptions. | Pet Persona |
 | [**Architecture & Database**](Architecture-and-Database) | Technical architecture, Zustand store map, Supabase SQL schema, & RLS policies. | Developers |
+| [**Data Pruning & Retention**](Data-Pruning-and-Retention) | Automatic data pruning rules, storage cleanup, & privacy retention schedules. | Developers / Privacy |
 | [**FAQ**](FAQ) | Frequently Asked Questions, troubleshooting, and offline demo mode. | All Users |
 
 ---

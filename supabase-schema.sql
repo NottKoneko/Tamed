@@ -302,6 +302,38 @@ CREATE TRIGGER enforce_display_name_rate_limit
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION check_display_name_rate_limit();
 
+-- 2c. RPC: Automatic Data Pruning & Stale Records Cleanup
+CREATE OR REPLACE FUNCTION prune_stale_data(p_pairing_id UUID)
+RETURNS VOID AS $func$
+BEGIN
+  -- 1. Prune instant nudges older than 14 days
+  DELETE FROM public.instant_nudges
+  WHERE pairing_id = p_pairing_id 
+    AND created_at < NOW() - INTERVAL '14 days';
+
+  -- 2. Prune completed reward proposals older than 30 days
+  DELETE FROM public.reward_proposals
+  WHERE pairing_id = p_pairing_id 
+    AND status != 'pending' 
+    AND created_at < NOW() - INTERVAL '30 days';
+
+  -- 3. Prune completed redemptions older than 90 days
+  DELETE FROM public.redemptions
+  WHERE pairing_id = p_pairing_id 
+    AND status != 'pending' 
+    AND created_at < NOW() - INTERVAL '90 days';
+
+  -- 4. Prune un-logged placeholder calendar entries older than 60 days
+  DELETE FROM public.calendar_entries
+  WHERE pairing_id = p_pairing_id 
+    AND status = 'none' 
+    AND entry_date < CURRENT_DATE - INTERVAL '60 days';
+END;
+$func$ LANGUAGE plpgsql SET search_path = public, pg_temp;
+
+REVOKE EXECUTE ON FUNCTION prune_stale_data(UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION prune_stale_data(UUID) TO authenticated;
+
 -- 3. RPC: Add XP and handle leveling logic
 CREATE OR REPLACE FUNCTION add_xp(p_profile_id UUID, p_amount INT)
 RETURNS VOID AS $func$

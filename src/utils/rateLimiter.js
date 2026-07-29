@@ -71,3 +71,31 @@ export const resetRateLimit = (key) => {
     localStorage.removeItem(`tamed_rl_${key}`);
   } catch (e) {}
 };
+
+/**
+ * Garbage cleans expired rate limit entries from localStorage.
+ */
+export const cleanupRateLimitStorage = () => {
+  try {
+    const now = Date.now();
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('tamed_rl_')) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const valid = parsed.filter(ts => now - ts < 86400000);
+            if (valid.length === 0) {
+              keysToRemove.push(key);
+            } else if (valid.length !== parsed.length) {
+              localStorage.setItem(key, JSON.stringify(valid));
+            }
+          }
+        }
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+};

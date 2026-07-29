@@ -4,7 +4,7 @@ import { mockBackend } from '../services/mockBackend';
 import { playSound, setSoundEnabled } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import { applyCustomTheme } from '../utils/theme';
-import { checkRateLimit } from '../utils/rateLimiter';
+import { checkRateLimit, cleanupRateLimitStorage } from '../utils/rateLimiter';
 import { sanitizeText, clampInput } from '../utils/sanitizer';
 import { getLocalDateString } from '../utils/dateUtils';
 import { getSecureRandomInt } from '../utils/cryptoUtils';
@@ -187,7 +187,9 @@ export const useAppStore = create((set, get) => ({
         let praiseNotes = [];
         let reminders = [];
 
+        cleanupRateLimitStorage();
         if (isSupabaseConfigured && session) {
+          await supabaseBackend.pruneStaleData(pairingData.id);
           [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders] = await Promise.all([
             supabaseBackend.getProfile(partnerId),
             supabaseBackend.getCalendarEntries(pairingData.id),
@@ -199,6 +201,7 @@ export const useAppStore = create((set, get) => ({
             supabaseBackend.getReminders(pairingData.id)
           ]);
         } else {
+          await mockBackend.pruneStaleData(pairingData.id);
           [partnerProfile, calendarEntries, proposals, rewardItems, redemptions, dailyTasks, praiseNotes, reminders] = await Promise.all([
             mockBackend.getProfile(partnerId),
             mockBackend.getCalendarEntries(pairingData.id),

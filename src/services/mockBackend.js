@@ -779,6 +779,33 @@ class MockBackend {
     this.notify('REDEMPTION_DELETED', { redemptionId });
     return true;
   }
+
+  async pruneStaleData(pairingId) {
+    await delay();
+    if (!pairingId) return;
+
+    const now = Date.now();
+    const FOURTEEN_DAYS = 14 * 86400000;
+    const THIRTY_DAYS = 30 * 86400000;
+    const NINETY_DAYS = 90 * 86400000;
+    const SIXTY_DAYS = 60 * 86400000;
+
+    db.nudges = db.nudges.filter(n => 
+      n.pairing_id !== pairingId || (now - new Date(n.created_at).getTime()) < FOURTEEN_DAYS
+    );
+
+    db.reward_proposals = db.reward_proposals.filter(p => 
+      p.pairing_id !== pairingId || p.status === 'pending' || (now - new Date(p.created_at).getTime()) < THIRTY_DAYS
+    );
+
+    db.redemptions = db.redemptions.filter(r => 
+      r.pairing_id !== pairingId || r.status === 'pending' || (now - new Date(r.created_at).getTime()) < NINETY_DAYS
+    );
+
+    db.calendar_entries = db.calendar_entries.filter(c => 
+      c.pairing_id !== pairingId || c.status !== 'none' || (now - new Date(c.entry_date).getTime()) < SIXTY_DAYS
+    );
+  }
 }
 
 export const mockBackend = new MockBackend();

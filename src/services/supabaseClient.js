@@ -626,5 +626,14 @@ export const supabaseBackend = {
     const { data, error } = await supabase.rpc('verify_security_pin', { p_user_id: userId, p_pin: pin });
     if (error) throw error;
     return data;
+  },
+
+  pruneStaleData: async (pairingId) => {
+    if (!supabase || !pairingId) return null;
+    try {
+      await supabase.rpc('prune_stale_data', { p_pairing_id: pairingId });
+    } catch (err) {
+      console.warn("Automated data pruning warning:", err.message);
+    }
   }
 };
