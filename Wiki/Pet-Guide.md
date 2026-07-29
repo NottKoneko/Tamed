@@ -1,47 +1,50 @@
 # 🦊 Pet Persona Guide
 
-As the **Pet / Submissive**, you complete daily habit checklists, earn XP, gain levels, collect species currency, and redeem rewards from the store.
+As the **Pet / Submissive**, you complete daily habit checklists, earn XP, advance levels, collect species currency, redeem rewards, and submit new reward proposals.
 
 ---
 
-## 1. Daily Task Checklist & XP System
+## 1. Daily Checklist & XP Engine
 
-* **Completing Tasks:** Tap any daily task checkmark on the Home screen to mark it complete.
-* **Earn XP:** Every completed task grants **+25 XP**.
-* **Leveling Up:** As your XP bar fills up, you advance levels! Audio-visual celebrations trigger when you reach new milestones.
-* **Daily Auto-Reset:** Your checklist resets every night at midnight, giving you a fresh start every day.
+* **Completing Routines:** Tap any task checkmark on the Home screen to complete a daily task.
+* **Earning XP:** Completing a task rewards **+25 XP**.
+* **Level Progression:** As your XP bar fills, you level up! The XP required to reach the next level is governed by:
+  $$XP_{\text{needed}}(L \to L+1) = 100 + (L-1) \times 50$$
+* **Level Milestones:** Leveling up triggers fanfare animations, canvas confetti, and Web Audio API synthesizer chimes, advancing your rank title (Novice Pet 🐣 to Supreme Royalty 👑).
+* **Midnight Auto-Reset:** All task checkmarks automatically reset at midnight local time (`00:00`) for a fresh checklist every day.
 
 ---
 
 ## 2. Species Currencies & Points Balance
 
-Depending on your chosen mascot species, you earn customized currency for green days and completed goals:
+Your points balance is denominated in your custom species currency:
 
-| Mascot Persona | Currency Name | Icon |
+| Mascot Persona | Currency Name | Currency Icon |
 | :--- | :--- | :--- |
 | 🐶 **Puppy** | Bones | 🦴 |
 | 🐱 **Kitty** | Fish | 🐟 |
 | 🦊 **Fox** | Berries | 🫐 |
 | ✨ **Custom** | Stars | ✨ |
 
-Your total balance is displayed in the header banner and under the **Rewards Hub**.
+Points are awarded when your Owner logs **Green 🟢** or **Yellow 🟡** calendar days. Your total balance is displayed in the header banner and in the Rewards Hub.
 
 ---
 
 ## 3. Rewards Hub & Proposing Items
 
-Navigate to the **Rewards** tab to spend your hard-earned points:
+Navigate to the **Rewards** tab to spend your hard-earned species currency:
 
-* **Redeeming Items:** Tap **Redeem** on any available store item if you have enough points.
-* **Proposing New Rewards:** Want a reward that isn't in the store yet? Tap **+ Propose Reward**, enter the title, description, and suggested point cost, and send it to your Owner for review!
-* **Redemption Queue:** Track pending, approved, and fulfilled redemptions under your History.
+* **Redeeming Rewards:** Tap **Redeem** on any available store item if you have sufficient points. Points are immediately deducted from your balance and the request enters the redemption queue.
+* **Canceling Requests:** You can cancel pending redemption requests prior to Owner review to receive an immediate refund of spent points.
+* **Proposing New Rewards:** Want a reward not yet in the store? Tap **+ Propose Reward**, enter the title, description, and suggested point cost, and send it to your Owner for review!
 
 ---
 
-## 4. Customizing Your Pet Profile
+## 4. Profile & Mascot Customization
 
 Under **Settings**:
-* Change your avatar species (Puppy, Kitty, Fox, Custom).
-* Update your preferred praise terms.
-* Customize primary and accent theme colors.
-* Configure PIN lock protection for extra privacy.
+* **Species Customization:** Switch between Puppy 🐶, Kitty 🐱, Fox 🦊, or Custom species personas.
+* **Custom Avatar & Icons:** Set a custom avatar image URL or pick custom species icons.
+* **Praise Terms:** Set your preferred praise terms (e.g., *"Good girl!"*).
+* **Theme Modes & Presets:** Choose from 4 environment modes (Midnight Dark, Obsidian Black, Clean Light, Soft Cream) or 6 curated color presets.
+* **Security PIN:** Configure a 4-digit PIN lock for extra privacy on sensitive actions.

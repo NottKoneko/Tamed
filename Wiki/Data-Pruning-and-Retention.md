@@ -1,34 +1,34 @@
 # 🧹 Data Pruning & Retention Policy
 
-To maintain high application performance, fast page load times, and clean database tables, **Tamed** enforces automated data pruning policies. This document details how stale data is cleaned across both Supabase PostgreSQL and local browser storage.
+To ensure maximum performance, fast query response times, and compliance with data minimization best practices, **Tamed** enforces automated data retention and garbage collection rules across both Supabase PostgreSQL and client browser storage.
 
 ---
 
-## 📊 Summary of Retention Rules
+## 📊 Retention Schedule Matrix
 
 | Data Surface | Table / Entity | Retention Period | Pruning Action | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **Instant Nudges** | `public.instant_nudges` | **14 Days** | Auto-purged after 14 days (or capped at 50 most recent per pairing) | Prevents real-time check-in message bloat |
-| **Reward Proposals** | `public.reward_proposals` | **30 Days** | Non-pending (`approved` or `denied`) proposals purged after 30 days | Cleans up historical requests while preserving active store items |
-| **Point Redemptions** | `public.redemptions` | **90 Days** | Completed (`approved`, `denied`, or `cancelled`) redemptions purged after 90 days | Cleans redemption log history while protecting pending approvals |
+| **Instant Nudges** | `public.instant_nudges` / `reminders` | **14 Days** | Auto-purged after 14 days | Prevents real-time check-in message bloat |
+| **Reward Proposals** | `public.reward_proposals` | **30 Days** | Non-pending (`approved` / `denied`) proposals purged after 30 days | Cleans historical request logs while preserving active store items |
+| **Point Redemptions** | `public.redemptions` | **90 Days** | Completed (`approved`, `denied`, or `cancelled`) redemptions purged after 90 days | Cleans redemption log history while protecting active/pending items |
 | **Calendar Entries** | `public.calendar_entries` | **60 Days** (Un-logged) | Un-logged `status: 'none'` placeholder entries purged after 60 days | Keeps active `green`, `yellow`, and `red` logs forever to preserve level streaks |
 | **Rate Limit Logs** | `localStorage` (`tamed_rl_*`) | **24 Hours** | Stale rate limit timestamps garbage-collected on app startup | Cleans client browser storage |
 
 ---
 
-## 🔒 Security & Privacy Benefits
+## 🔒 Security & Data Minimization (GDPR)
 
-1. **Data Minimization (GDPR Compliance)**:
-   - Data is retained only as long as necessary for routine tracking and positive reinforcement.
-   - Full account & data erasure can also be triggered manually in **Settings > Danger Zone** (with 3-step password verification).
+1. **Automated Cleanup Execution**:
+   - The Supabase stored procedure `prune_stale_data(p_pairing_id)` executes in the background whenever pairing data loads.
+   - Offline Demo Mode mirrors identical pruning logic within `mockBackend.js`.
 
-2. **Automated Cleanup Execution**:
-   - Supabase stored procedure `prune_stale_data(p_pairing_id)` runs automatically in the background whenever pairing data is loaded.
-   - Demo / Offline mode mirrors identical cleanup logic inside the mock backend engine.
+2. **Manual Account Erasure (Danger Zone)**:
+   - Users can trigger total account and pairing data deletion under **Settings > Danger Zone**.
+   - Requires 3-step password verification or security PIN confirmation. Permanently removes all profile records, pairing links, task checklists, and calendar logs.
 
 ---
 
-## 🛠️ PostgreSQL Function Schema
+## 🛠️ PostgreSQL Pruning Function Schema
 
 ```sql
 CREATE OR REPLACE FUNCTION prune_stale_data(p_pairing_id UUID)
