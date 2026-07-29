@@ -1,6 +1,8 @@
-# 🐾 TAMED (Puppy Schedule)
-
-> **The Ultimate Gamified Routine Tracking, Positive Reinforcement & Reward Management App for Couples & Partners.**
+<div align="center">
+  <img src="public/logo.png" alt="Tamed Logo" width="180" />
+  <h1>TAMED</h1>
+  <p><b>The Ultimate Gamified Routine Tracking, Positive Reinforcement & Reward Management App for Couples & Partners.</b></p>
+</div>
 
 [![Live Web Application](https://img.shields.io/badge/🚀_Live_App-tamed.pages.dev-8B5CF6?style=for-the-badge&logo=cloudflare&logoColor=white)](https://tamed.pages.dev/)
 [![Official Wiki](https://img.shields.io/badge/📖_Documentation-GitHub_Wiki-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://github.com/NottKoneko/Tamed/wiki)

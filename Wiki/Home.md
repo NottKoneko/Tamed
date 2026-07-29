@@ -1,6 +1,8 @@
-# 🐾 Welcome to the Tamed Wiki
-
-> **The Ultimate Gamified Routine Tracking, Positive Reinforcement & Reward Management App for Couples & Partners.**
+<div align="center">
+  <img src="../public/logo.png" alt="Tamed Logo" width="180" />
+  <h1>Welcome to the Tamed Wiki</h1>
+  <p><b>The Ultimate Gamified Routine Tracking, Positive Reinforcement & Reward Management App for Couples & Partners.</b></p>
+</div>
 
 [![Live Web Application](https://img.shields.io/badge/🚀_Live_App-tamed.pages.dev-8B5CF6?style=for-the-badge&logo=cloudflare&logoColor=white)](https://tamed.pages.dev/)
 [![React Version](https://img.shields.io/badge/React-19.2.7-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
