@@ -162,11 +162,12 @@ export const Onboarding = () => {
           src="/logo.png" 
           alt="Tamed Logo" 
           style={{ 
-            height: '115px', 
-            width: 'auto', 
+            width: '180px', 
+            maxWidth: '80vw',
+            height: 'auto', 
             objectFit: 'contain',
-            marginBottom: '0.25rem', 
-            filter: 'drop-shadow(0 12px 24px rgba(219, 39, 119, 0.25))'
+            marginBottom: '0.5rem', 
+            filter: 'drop-shadow(0 14px 28px rgba(219, 39, 119, 0.3))'
           }} 
         />
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: '0.1rem', fontWeight: 500 }}>
