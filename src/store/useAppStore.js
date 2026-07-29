@@ -464,14 +464,20 @@ export const useAppStore = create((set, get) => ({
   },
 
   evaluateAutoCalendarStatus: async () => {
-    const { dailyTasks, pairing } = get();
+    const { dailyTasks, pairing, calendarEntries } = get();
     if (!pairing || !dailyTasks || dailyTasks.length === 0) return;
 
     const todayStr = getLocalDateString();
+    
+    // 1. Safeguard: Never downgrade a day that you already manually marked Green
+    const currentTodayEntry = (calendarEntries || []).find(e => e.entry_date === todayStr);
+    if (currentTodayEntry?.status === 'green') return;
+
     const total = dailyTasks.length;
     const completed = dailyTasks.filter(t => t.is_completed).length;
 
-    let targetStatus = 'red';
+    // 2. Safeguard: Default to 'none' instead of 'red' so zero tasks doesn't penalize
+    let targetStatus = 'none'; 
     if (completed === total && total > 0) {
       targetStatus = 'green';
     } else if (total > 0 && (completed / total) >= (1 / 3)) {
